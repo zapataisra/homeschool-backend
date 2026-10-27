@@ -2,3 +2,6 @@ venv/
 .env
 __pycache__/
 chroma_data/
+data/cache/
+data/chunks/
+data/*.pdf

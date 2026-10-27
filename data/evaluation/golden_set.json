@@ -1,0 +1,22 @@
+[
+  {
+    "pregunta": "¿Cuáles son los cuatro campos formativos de la educación básica?",
+    "chunk_id_esperado": [6,7,9,10,11]
+  },
+  {
+    "pregunta": "¿En qué consiste el proceso de codiseño del programa analítico?",
+    "chunk_id_esperado": [10,173,175,176]
+  },
+  {
+    "pregunta": "¿Cómo se define la evaluación formativa dentro de la Nueva Escuela Mexicana?",
+    "chunk_id_esperado": [7,10,11,184,185]
+  },
+  {
+    "pregunta": "¿Cuál es el propósito central del campo Saberes y Pensamiento Científico?",
+    "chunk_id_esperado": [6,10,15,17,18]    
+  },
+  {
+    "pregunta": "¿Cuáles son los siete ejes articuladores del plan de estudios?",
+    "chunk_id_esperado": [11,180,207,210]
+  }
+]
