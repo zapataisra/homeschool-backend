@@ -1,0 +1,68 @@
+{
+  "modelo": "all-MiniLM-L6-v2",
+  "preguntas": 30,
+  "resultados": {
+    "vector": {
+      "hit@1": 0.2,
+      "hit@3": 0.3667,
+      "hit@5": 0.4,
+      "mrr@10": 0.2861,
+      "latencia_ms_media": 3.82,
+      "consultas_sin_resultados": 0,
+      "preguntas_sin_acierto": [
+        "¿Para qué colaboran los alumnos de primer grado mediante el dictado al docente?",
+        "¿Cómo comparan la longitud de objetos de manera indirecta en primer grado?",
+        "¿Cuáles referencias espaciales se utilizan para representar componentes del entorno natural?",
+        "¿Qué deben hacer las niñas y niños ante comportamientos violentos o acoso?",
+        "¿Cómo se define la noción de resta al resolver situaciones matemáticas?",
+        "¿Qué criterio utilizan los niños para organizar de manera inicial su escritura?",
+        "¿Cuál es el límite de la sucesión oral ascendente y descendente esperada en segundo grado?",
+        "¿En qué tipo de situaciones cotidianas se exploran las acciones motrices?",
+        "¿Cuál es la función principal de la evaluación formativa según la UNESCO?",
+        "¿A qué adaptan sus movimientos los alumnos durante las condiciones que se presentan en los juegos?",
+        "¿Qué forma verbal se emplea para redactar indicaciones o instrucciones?",
+        "¿Qué recursos se utilizan para representar fracciones visualmente?",
+        "¿Qué actitud favorece la negociación y el entendimiento con las demás personas?",
+        "¿Qué efectos sobre el estado de los objetos se observan al empujarlos y jalarlos?",
+        "¿Qué implica el proceso de contextualización en el diseño del Programa Analítico?",
+        "¿Sobre qué deben reflexionar los alumnos al leer textos narrados en primera persona del singular?",
+        "¿Qué acciones fortalecen y cuidan el sistema inmunológico en la vida diaria?",
+        "¿Cuál es el objetivo de participar en diferentes interacciones dentro de la familia?"
+      ]
+    },
+    "keyword": {
+      "hit@1": 0.4,
+      "hit@3": 0.6333,
+      "hit@5": 0.7333,
+      "mrr@10": 0.5467,
+      "latencia_ms_media": 8.07,
+      "consultas_sin_resultados": 0,
+      "preguntas_sin_acierto": [
+        "¿Para qué colaboran los alumnos de primer grado mediante el dictado al docente?",
+        "¿Qué deben hacer las niñas y niños ante comportamientos violentos o acoso?",
+        "¿Qué criterio utilizan los niños para organizar de manera inicial su escritura?",
+        "¿Qué efectos sobre el estado de los objetos se observan al empujarlos y jalarlos?",
+        "¿Qué implica el proceso de contextualización en el diseño del Programa Analítico?",
+        "¿Cómo explican los alumnos la formación de la evidencia biológica del pasado reconstruyendo fósiles?"
+      ]
+    },
+    "hybrid": {
+      "hit@1": 0.2667,
+      "hit@3": 0.5,
+      "hit@5": 0.7,
+      "mrr@10": 0.4244,
+      "latencia_ms_media": 8.57,
+      "consultas_sin_resultados": 0,
+      "preguntas_sin_acierto": [
+        "¿Para qué colaboran los alumnos de primer grado mediante el dictado al docente?",
+        "¿Qué deben hacer las niñas y niños ante comportamientos violentos o acoso?",
+        "¿Qué criterio utilizan los niños para organizar de manera inicial su escritura?",
+        "¿Cuál es la función principal de la evaluación formativa según la UNESCO?",
+        "¿Qué recursos se utilizan para representar fracciones visualmente?",
+        "¿Qué efectos sobre el estado de los objetos se observan al empujarlos y jalarlos?",
+        "¿Qué implica el proceso de contextualización en el diseño del Programa Analítico?",
+        "¿Sobre qué deben reflexionar los alumnos al leer textos narrados en primera persona del singular?"
+      ]
+    }
+  }
+}

@@ -1,22 +1,152 @@
 [
   {
-    "pregunta": "¿Cuáles son los cuatro campos formativos de la educación básica?",
-    "chunk_id_esperado": [6,7,9,10,11]
+    "pregunta": "¿Para qué colaboran los alumnos de primer grado mediante el dictado al docente?",
+    "evidencia": ["colaborar en la escritura colectiva"],
+    "source": "Programa_Sintetico_Fase_3.pdf"
   },
   {
-    "pregunta": "¿En qué consiste el proceso de codiseño del programa analítico?",
-    "chunk_id_esperado": [10,173,175,176]
+    "pregunta": "¿Cómo comparan la longitud de objetos de manera indirecta en primer grado?",
+    "evidencia": ["apoyo de un intermediario"],
+    "source": "Programa_Sintetico_Fase_3.pdf"
   },
   {
-    "pregunta": "¿Cómo se define la evaluación formativa dentro de la Nueva Escuela Mexicana?",
-    "chunk_id_esperado": [7,10,11,184,185]
+    "pregunta": "¿Cuáles referencias espaciales se utilizan para representar componentes del entorno natural?",
+    "evidencia": ["derecha, izquierda, cerca, lejos, entre otras"],
+    "source": "Programa_Sintetico_Fase_3.pdf"
   },
   {
-    "pregunta": "¿Cuál es el propósito central del campo Saberes y Pensamiento Científico?",
-    "chunk_id_esperado": [6,10,15,17,18]    
+    "pregunta": "¿Qué deben hacer las niñas y niños ante comportamientos violentos o acoso?",
+    "evidencia": ["solicita apoyo y protección de integrantes"],
+    "source": "Programa_Sintetico_Fase_3.pdf"
   },
   {
-    "pregunta": "¿Cuáles son los siete ejes articuladores del plan de estudios?",
-    "chunk_id_esperado": [11,180,207,210]
+    "pregunta": "¿Cómo se define la noción de resta al resolver situaciones matemáticas?",
+    "evidencia": ["pérdida de elementos en una colección"],
+    "source": "Programa_Sintetico_Fase_3.pdf"
+  },
+  {
+    "pregunta": "¿Qué criterio utilizan los niños para organizar de manera inicial su escritura?",
+    "evidencia": ["criterio para organizar su escritura"],
+    "source": "Programa_Sintetico_Fase_3.pdf"
+  },
+  {
+    "pregunta": "¿Cuál es el límite de la sucesión oral ascendente y descendente esperada en segundo grado?",
+    "evidencia": ["ascendente y descendente a partir de un número"],
+    "source": "Programa_Sintetico_Fase_3.pdf"
+  },
+  {
+    "pregunta": "¿Qué se plantea realizar frente a las actividades humanas que impactan negativamente a la naturaleza?",
+    "evidencia": ["planteando la posibilidad de realizar cambios"],
+    "source": "Programa_Sintetico_Fase_3.pdf"
+  },
+  {
+    "pregunta": "¿En qué tipo de situaciones cotidianas se exploran las acciones motrices?",
+    "evidencia": ["acciones motrices y expresivas en juegos"],
+    "source": "Programa_Sintetico_Fase_3.pdf"
+  },
+  {
+    "pregunta": "¿Cuál es la función principal de la evaluación formativa según la UNESCO?",
+    "evidencia": ["retroalimentar el proceso educativo a través de la"],
+    "source": "Programa_Sintetico_Fase_3.pdf"
+  },
+  {
+    "pregunta": "¿Qué conectores temporales dan claridad a la descripción de un proceso?",
+    "evidencia": ["simultáneamente, más tarde, antes"],
+    "source": "Programa_Sintetico_Fase_4.pdf"
+  },
+  {
+    "pregunta": "¿Qué partes óseas conforman el sistema locomotor humano?",
+    "evidencia": ["huesos y columna vertebral"],
+    "source": "Programa_Sintetico_Fase_4.pdf"
+  },
+  {
+    "pregunta": "¿Cuáles son algunos desastres asociados a fenómenos naturales identificados en las zonas de seguridad?",
+    "evidencia": ["huracanes, deslaves, inundaciones, tsunamis e incendios"],
+    "source": "Programa_Sintetico_Fase_4.pdf"
+  },
+  {
+    "pregunta": "¿A qué adaptan sus movimientos los alumnos durante las condiciones que se presentan en los juegos?",
+    "evidencia": ["elementos básicos de los juegos"],
+    "source": "Programa_Sintetico_Fase_4.pdf"
+  },
+  {
+    "pregunta": "¿Qué forma verbal se emplea para redactar indicaciones o instrucciones?",
+    "evidencia": ["verbos en infinitivo o imperativo"],
+    "source": "Programa_Sintetico_Fase_4.pdf"
+  },
+  {
+    "pregunta": "¿Qué recursos se utilizan para representar fracciones visualmente?",
+    "evidencia": ["apoyo de material concreto y modelos"],
+    "source": "Programa_Sintetico_Fase_4.pdf"
+  },
+  {
+    "pregunta": "¿Qué pueblos originarios habitaron el territorio antes de la primera invasión europea?",
+    "evidencia": ["Olmecas, Teotihuacanos, Mayas, Zapotecas"],
+    "source": "Programa_Sintetico_Fase_4.pdf"
+  },
+  {
+    "pregunta": "¿Qué actitud favorece la negociación y el entendimiento con las demás personas?",
+    "evidencia": ["puntos de vista, para favorecer el entendimiento"],
+    "source": "Programa_Sintetico_Fase_4.pdf"
+  },
+  {
+    "pregunta": "¿Qué efectos sobre el estado de los objetos se observan al empujarlos y jalarlos?",
+    "evidencia": ["movimiento y reposo, al experimentar con los cambios"],
+    "source": "Programa_Sintetico_Fase_4.pdf"
+  },
+  {
+    "pregunta": "¿Qué implica el proceso de contextualización en el diseño del Programa Analítico?",
+    "evidencia": ["resignificación y apropiación del currículo"],
+    "source": "Programa_Sintetico_Fase_4.pdf"
+  },
+  {
+    "pregunta": "¿Sobre qué deben reflexionar los alumnos al leer textos narrados en primera persona del singular?",
+    "evidencia": ["reflexiona sobre las razones por las que suelen"],
+    "source": "Programa_Sintetico_Fase_5.pdf"
+  },
+  {
+    "pregunta": "¿Qué acciones fortalecen y cuidan el sistema inmunológico en la vida diaria?",
+    "evidencia": ["consumo de agua simple potable, descanso, actividades"],
+    "source": "Programa_Sintetico_Fase_5.pdf"
+  },
+  {
+    "pregunta": "¿Qué transformaciones en el gobierno mexicano se analizan durante el siglo XX?",
+    "evidencia": ["fin del porfiriato, la Revolución Mexicana"],
+    "source": "Programa_Sintetico_Fase_5.pdf"
+  },
+  {
+    "pregunta": "¿Cuál es el objetivo de participar en diferentes interacciones dentro de la familia?",
+    "evidencia": ["convivencia en la familia, para fortalecer"],
+    "source": "Programa_Sintetico_Fase_5.pdf"
+  },
+  {
+    "pregunta": "¿Cuáles son algunos nexos empleados para anteceder argumentos en la escritura de textos?",
+    "evidencia": ["porque, ya que, si bien, en consecuencia"],
+    "source": "Programa_Sintetico_Fase_5.pdf"
+  },
+  {
+    "pregunta": "¿Cómo explican los alumnos la formación de la evidencia biológica del pasado reconstruyendo fósiles?",
+    "evidencia": ["proceso de fosilización a partir de construir"],
+    "source": "Programa_Sintetico_Fase_5.pdf"
+  },
+  {
+    "pregunta": "¿Qué propósito político buscaba la República durante el proceso histórico denominado Maximato?",
+    "evidencia": ["búsqueda de la estabilidad política que requería"],
+    "source": "Programa_Sintetico_Fase_5.pdf"
+  },
+  {
+    "pregunta": "¿Cuál es el objetivo de evaluar las dificultades para la práctica constante de actividades físicas?",
+    "evidencia": ["implementar opciones que permitan superarlos"],
+    "source": "Programa_Sintetico_Fase_5.pdf"
+  },
+  {
+    "pregunta": "¿Hasta qué número de cifras expresan oralmente los alumnos la sucesión en quinto grado?",
+    "evidencia": ["sucesión numérica hasta seis cifras"],
+    "source": "Programa_Sintetico_Fase_5.pdf"
+  },
+  {
+    "pregunta": "¿Qué elementos de redacción se deben incluir en un texto breve para un tríptico preventivo?",
+    "evidencia": ["nexos que ayuden a que las ideas"],
+    "source": "Programa_Sintetico_Fase_5.pdf"
   }
 ]
