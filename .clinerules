@@ -1,0 +1,184 @@
+# HomeschoolAI: reglas de arquitectura, reutilización y seguridad
+
+Estas reglas son obligatorias. Si una petición las contradice, DETENTE y pregunta antes de escribir código. Si dudas de un nombre de paquete, API, versión o configuración, verifícalo en la documentación oficial; no lo inventes.
+
+## 1. Visión general
+
+HomeschoolAI es un sistema RAG sobre los Programas Sintéticos de primaria de la SEP (Fases 3, 4 y 5) que alimenta al agente conversacional LUMI. Dos stacks conviven en este repositorio:
+
+- **Python (ingesta, vectorización y evaluación: COMPLETADO).** Vive en `app/adapters/`, `vectordb/` y `data/`. Extrae texto de PDFs, fragmenta (ventana de 1000 caracteres, solape de 200), genera embeddings locales con `all-MiniLM-L6-v2` (384 dimensiones) y evalúa la recuperación.
+- **C# con .NET 8 LTS (API de producción: EN DESARROLLO).** Expone la API REST, accede a datos con EF Core, gestionará identidad y pagos, y orquestará agentes con Microsoft Semantic Kernel.
+
+## 2. Base de datos (fuente de verdad)
+
+- Motor: PostgreSQL + `pgvector` en Docker (`vectordb/docker-compose.yml`).
+- Credenciales en `.env` (raíz): `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`.
+- Tabla `embeddings_sep`: existe y contiene 699 registros validados. Esquema exacto:
+  - `id` (`serial PRIMARY KEY`): identificador único global del fragmento.
+  - `source` (`text NOT NULL`): PDF de origen (ej. `Programa_Sintetico_Fase_3.pdf`).
+  - `chunk_id` (`integer NOT NULL`): número secuencial POR documento; se reinicia en 0 en cada PDF. `UNIQUE (source, chunk_id)`.
+  - `texto` (`text NOT NULL`): contenido del fragmento.
+  - `embedding` (`vector(384)`): índice HNSW (`vector_cosine_ops`).
+  - `fts` (`tsvector`): columna autogenerada en español, índice GIN.
+  - `embedding_model` (`text`): modelo que generó el vector (`all-MiniLM-L6-v2`).
+  - `page` (`integer`): página del documento original.
+- La tabla pertenece a Python. Desde C#, `embeddings_sep` es SOLO LECTURA: ningún `INSERT`, `UPDATE`, `DELETE` ni DDL.
+- La API debe conectarse con un rol de base de datos de solo lectura (`SELECT` sobre `embeddings_sep`), no con el usuario administrador.
+
+## 3. Recuperación híbrida (RRF)
+
+- Se combinan similitud vectorial (distancia coseno `<=>`) y búsqueda léxica (`fts @@ ...`) con Reciprocal Rank Fusion, k = 60:
+  `RRF = 1.0 / (60 + rank_sem) + 1.0 / (60 + rank_lex)`
+- El `FULL OUTER JOIN` entre ambas ramas SIEMPRE usa `id` (`USING (id)` o `ON s.id = k.id`). NUNCA `chunk_id`: se repite entre PDFs y produce resultados duplicados.
+- Cada rama toma primero un conjunto candidato (`LIMIT` de 20) y DESPUÉS asigna el rango (`ROW_NUMBER()`).
+- La rama léxica usa OR entre términos. `plainto_tsquery` y `websearch_to_tsquery` exigen TODOS los términos y casi nunca devuelven resultados con preguntas largas. Procedimiento: extraer términos con la expresión `\w{3,}`, en minúsculas y sin repetidos; unirlos con ` | `; pasar el resultado como PARÁMETRO a `to_tsquery('spanish', @tsq)`. Si no quedan términos, degradar a búsqueda solo vectorial.
+- El vector de consulta se envía como parámetro tipado (`Pgvector.Vector`); nunca como texto concatenado.
+- La consulta híbrida existe en UN solo lugar de C# (el repositorio de `embeddings_sep`). La referencia de comportamiento es `app/adapters/retrieval.py`.
+- Prueba de paridad obligatoria: la misma pregunta con el mismo vector devuelve los mismos `id` en el mismo orden en Python y en C#.
+- La consulta debe vectorizarse con el MISMO modelo guardado en `embedding_model`. Define un puerto `IQueryEmbedder` en `Domain`; su implementación (ONNX local, microservicio Python o API externa) es una decisión pendiente (ver sección 10). No la hardcodees.
+- Evaluación: `data/evaluation/golden_set.json` (30 preguntas) valida por coincidencia literal de `evidencia`, no por IDs fijos.
+
+## 4. Arquitectura limpia / hexagonal (.NET 8)
+
+Regla de dependencia: las dependencias solo apuntan hacia adentro.
+
+| Proyecto | Contiene | Puede depender de |
+|---|---|---|
+| `HomeschoolAI.Domain` | Entidades, objetos de valor, interfaces de puertos de salida (repositorios, `IQueryEmbedder`), excepciones de dominio | Nada (salvo tipos de valor indispensables como `Pgvector`) |
+| `HomeschoolAI.Application` | Casos de uso, DTOs, puertos de entrada (`ISearchService`), orquestación, validación de entrada | Domain |
+| `HomeschoolAI.Adapters` | `HomeschoolDbContext`, repositorios Npgsql/EF Core, plugins de Semantic Kernel, implementaciones de puertos, clientes externos | Domain, Application |
+| `HomeschoolAI.Api` | Punto de entrada: endpoints, `Program.cs`, middlewares, inyección de dependencias | Application, Adapters |
+
+Reglas concretas:
+1. Domain y Application NUNCA referencian EF Core, Npgsql (salvo `Pgvector`), Semantic Kernel, ASP.NET ni HttpClient. Excepción: Application puede usar `ILogger<T>` (paquete de abstracciones de logging). Domain no registra logs.
+2. Las entidades y el `DbContext` de EF Core no salen de Adapters. La API devuelve solo DTOs, nunca entidades.
+3. Los endpoints solo traducen HTTP a un caso de uso y de vuelta. Sin lógica de negocio ni consultas.
+4. Los plugins de Semantic Kernel viven en Adapters y llaman a los puertos de entrada de Application (`ISearchService`); NUNCA al `DbContext` directamente.
+5. Cada proyecto expone su registro de dependencias (`AddApplication()`, `AddAdapters(configuration)`); `Program.cs` solo los compone.
+6. Toda operación de E/S es `async` y recibe `CancellationToken`. Prohibido `.Result` y `.Wait()`.
+7. Las excepciones de dominio se convierten en `ProblemDetails` en un único middleware. Nunca se expone una traza de pila.
+8. La configuración usa el patrón Options (`IOptions<T>`) con validación al arrancar.
+9. EF Core: Fluent API en `OnModelCreating`, nombres de tabla y columna en minúsculas `snake_case` exactos a PostgreSQL, con `.HasPostgresExtension("vector")` y `UseVector()`.
+10. Identificadores y código en inglés; textos para el usuario en español.
+11. Mantén pruebas de arquitectura que fallen el build si se rompe la regla de dependencia (por ejemplo con NetArchTest o ArchUnitNET; verifica el paquete vigente).
+
+Semantic Kernel: los servicios de búsqueda híbrida se exponen como plugins nativos con funciones de nombre y descripción claros, para que el LLM las invoque de forma determinista.
+
+## 5. Reutilización de código
+
+1. ANTES de crear un tipo, método o consulta, busca en la solución si ya existe algo equivalente. Extiéndelo en lugar de duplicarlo; menciona lo que reutilizas.
+2. Una responsabilidad, un lugar: la consulta SQL híbrida, la extracción de términos, la constante k de RRF, el mapeo entidad a DTO y la sanitización de texto existen una sola vez.
+3. Si la misma lógica aparece una segunda vez, extráela. No crees abstracciones para casos que aún no existen.
+4. Nada de copiar y pegar entre archivos ni entre pruebas: usa helpers, builders y fixtures compartidos.
+5. Configuración común en la raíz: `Directory.Build.props` (nullable, advertencias como errores, analizadores) y `Directory.Packages.props` (versiones de paquetes centralizadas).
+6. Sin cadenas ni números mágicos repetidos: constantes con nombre u opciones de configuración.
+7. No reimplementes en C# lo que ya hace Python (ingesta, vectorización, evaluación). Intégrate por la base de datos y por pruebas de paridad.
+8. Cada paquete NuGet nuevo se justifica y se revisa antes de añadirlo.
+
+## 6. Seguridad basada en OWASP
+
+Marco de referencia: OWASP ASVS (nivel 2 como objetivo), OWASP Top 10, OWASP API Security Top 10 y OWASP Top 10 for LLM Applications (verifica las versiones vigentes). Si omites una regla, deja un comentario `// SECURITY:` con el motivo y avisa al usuario.
+
+**Control de acceso**
+- Denegar por defecto: cada endpoint exige autorización; los públicos se marcan explícitamente y se justifican.
+- Cuando exista identidad, toda consulta se filtra por la familia del usuario autenticado y se prueba contra acceso a recursos ajenos (IDOR/BOLA).
+- Los permisos se verifican en código, nunca por lo que diga un LLM.
+
+**Inyección y validación de entrada**
+- Todo SQL va parametrizado. Prohibido concatenar texto del usuario en SQL; prohibido `FromSqlRaw` con datos externos.
+- Valida cada DTO con una lista de valores permitidos y límites: longitud máxima de la pregunta, `limit` entre 1 y 20, `mode` solo valores del enum. Rechaza lo desconocido.
+- Los endpoints reciben DTOs, nunca entidades (evita la asignación masiva). Limita el tamaño del cuerpo de la petición.
+
+**Configuración y secretos**
+- Ningún secreto en el repositorio ni en `appsettings.json`: usa variables de entorno o `dotnet user-secrets` en desarrollo.
+- HTTPS y HSTS fuera de desarrollo; cabeceras de seguridad estándar; CORS con lista explícita de orígenes (nunca `AllowAnyOrigin` con credenciales); Swagger solo en Development.
+- Mínimo privilegio en base de datos (ver sección 2).
+
+**Errores y registro** (reglas completas en la sección 6.1)
+- Errores genéricos al cliente (`ProblemDetails`); el detalle va a los logs.
+- Logs estructurados con identificador de correlación. NO registres textos de preguntas de menores, contenido completo de fragmentos, tokens, contraseñas ni cadenas de conexión.
+
+**Disponibilidad y consumo**
+- Limitación de tasa en la búsqueda y en cualquier endpoint que llame a un LLM.
+- Tiempos de espera en base de datos y en llamadas externas; topes de resultados; máximo de llamadas a herramientas por petición.
+
+**Dependencias**
+- Revisa vulnerabilidades con `dotnet list package --vulnerable --include-transitive` antes de dar por terminada una tarea que añada paquetes. Sin paquetes abandonados.
+
+**Identidad y pagos (cuando se implementen)**
+- ASP.NET Core Identity; nunca criptografía ni hash de contraseñas propios.
+- Cookies `HttpOnly`, `Secure`, `SameSite`; bloqueo por intentos fallidos; re-autenticación en acciones sensibles.
+- El niño no tiene credenciales propias. Los datos de tarjeta nunca tocan el servidor. Los webhooks de pago verifican firma e idempotencia; solo un webhook verificado activa derechos.
+
+**LLM y agentes (OWASP LLM)**
+- Todo texto recuperado y toda entrada del usuario son DATOS NO CONFIABLES, nunca instrucciones: se delimitan en el prompt y no pueden cambiar permisos ni herramientas.
+- Las funciones expuestas a Semantic Kernel son mínimas y específicas. Prohibidas las herramientas genéricas (ejecutar SQL, shell, archivos arbitrarios).
+- Las salidas del LLM se tratan como no confiables: salida estructurada con esquema y validación antes de usarlas.
+- Límites de tokens, de iteraciones y de llamadas a herramientas. Registra cada llamada a herramienta.
+- Ningún dato personal de la niña llega al LLM. Las respuestas citan sus fuentes.
+
+## 6.1 Registro (logging) y auditoría
+
+Objetivo: poder diagnosticar problemas y reconstruir qué pasó sin exponer datos sensibles. Hoy: `ILogger` de .NET con salida JSON a consola. No añadas Serilog ni otro paquete de logging sin preguntar.
+
+**Cómo registrar**
+1. Usa siempre `ILogger<T>` inyectado. Prohibido `Console.WriteLine` y los loggers estáticos.
+2. Plantillas de mensaje con parámetros con nombre: `"Búsqueda completada: {Mode} {ResultCount} {ElapsedMs}"`. PROHIBIDO interpolar (`$"..."`) o concatenar: rompe la estructura del log y permite falsificar líneas con saltos de línea.
+3. En rutas frecuentes usa el generador de código `[LoggerMessage]` (plantilla compilada y sin asignaciones innecesarias).
+4. Niveles: `Debug` solo en desarrollo; `Information` para eventos de negocio (búsqueda completada, con modo, número de resultados y duración); `Warning` para algo recuperable (se degradó a búsqueda solo vectorial); `Error` para una operación fallida, siempre con la excepción como parámetro; `Critical` si la aplicación no puede continuar. En producción el mínimo es `Information`, ajustable por espacio de nombres desde la configuración.
+5. Cada petición lleva un identificador de correlación (el `TraceId` de `Activity`) dentro del ámbito de logs, y se devuelve en el `ProblemDetails` de los errores.
+
+**Qué registrar**
+- Petición HTTP: método, plantilla de ruta (no la URL con la consulta), código de estado, duración. Sin cuerpo.
+- Búsqueda: modo, número de resultados, duración de la vectorización y de la consulta SQL, y si se degradó.
+- Errores con su excepción, rechazos de autorización, límites de tasa activados, arranque de la aplicación (versión y configuración SIN secretos).
+- Cuando exista identidad: inicios de sesión, bloqueos y cambios de rol.
+
+**Qué NO registrar nunca**
+- Texto de las preguntas de la niña (registra solo longitud o un hash), contenido completo de fragmentos, vectores, tokens, contraseñas, cadenas de conexión, claves de API ni datos personales.
+- Cuerpos completos de peticiones o respuestas.
+
+**Separación de registros**
+- Registros operativos: los de este apartado.
+- Auditoría de seguridad (inicios de sesión, cambios de rol, aprobaciones parentales, eventos de pago): irá a una tabla `audit_log` de solo inserción cuando exista el esquema de identidad; no se confía solo en archivos de texto.
+- Trazas de LLM (prompts, tokens, costo): son otro tema y se tratarán con OpenTelemetry cuando lleguen los agentes; los prompts se redactan antes de guardarse.
+
+**Salida y retención**
+- Desarrollo: consola legible. Producción: JSON por la salida estándar (compatible con contenedores). Si se escribe a archivo: rotación diaria, retención de 14 días, la carpeta de logs en `.gitignore`.
+- Los logs nunca se suben al repositorio.
+
+**Pruebas**
+- Una prueba comprueba que una búsqueda no deja la pregunta ni el texto de los fragmentos en los registros (por ejemplo con un proveedor de logs falso; verifica el paquete vigente).
+
+## 7. Pruebas y definición de terminado
+
+Una tarea está terminada solo si:
+1. `dotnet build` sin advertencias.
+2. `dotnet test` en verde, incluidas las pruebas de arquitectura.
+3. Hay pruebas nuevas del comportamiento añadido. Casos de uso: pruebas unitarias con dobles falsos. Repositorios y API: pruebas de integración marcadas por categoría.
+4. Las pruebas de integración usan una base de pruebas desechable (por ejemplo Testcontainers) o un esquema aparte, y NUNCA escriben en `embeddings_sep`.
+5. Todo error corregido nace con una prueba que lo reproduce.
+6. Se cumple la lista de seguridad de la sección 6 y las reglas de registro de la 6.1 que apliquen al cambio.
+7. No hay paquetes nuevos con vulnerabilidades conocidas.
+
+## 8. Prohibiciones
+
+1. No modifiques, muevas ni elimines nada en `app/adapters/`, `vectordb/` ni `data/` salvo petición explícita del usuario.
+2. No ejecutes `dotnet ef migrations add`, `dotnet ef database update` ni `Database.EnsureCreated()`. EF Core solo mapea la tabla existente `embeddings_sep`. Excepción futura: cuando el usuario apruebe explícitamente un `AppDbContext` separado, con esquema propio (por ejemplo `app`) para identidad y pagos, se permitirán migraciones SOLO sobre ese esquema y nunca sobre `embeddings_sep`.
+3. No escribas contraseñas ni claves en código versionado. Respeta `.gitignore`: `bin/`, `obj/`, `.env`, `appsettings.*.local.json`, `data/cache/`, `data/chunks/`, `data/*.pdf`, `data/evaluation/runs/`.
+4. No añadas paquetes, proyectos ni dependencias entre proyectos que rompan la sección 4 sin preguntar.
+
+## 9. Flujo de trabajo del agente
+
+1. Antes de codificar: lee los archivos afectados, busca código reutilizable y resume en 3 líneas qué harás y cuándo está terminado.
+2. Cambios pequeños y revisables: un propósito por cambio.
+3. Después: ejecuta build y pruebas, repasa la sección 7 y la lista de seguridad aplicable.
+4. Al terminar, resume qué cambió, qué reutilizaste, qué riesgos de seguridad consideraste y qué queda pendiente.
+
+## 10. Decisiones pendientes (no las resuelvas por tu cuenta)
+
+- Implementación de `IQueryEmbedder`: ONNX local en C#, microservicio Python o API externa. Debe usar el modelo guardado en `embedding_model`.
+- Semantic Kernel o Microsoft Agent Framework para .NET (hoy se usa Semantic Kernel; verifica el estado vigente).
+- Identidad: sesión por cookie o por tokens; aislamiento por familia con filtros de EF Core, con o sin Row-Level Security.
+- Esquema y `DbContext` separados para identidad y pagos (ver sección 8, punto 2).
+- Destino de los logs en producción: salida estándar, archivo, un visor local o OpenTelemetry. Hoy: consola en JSON.

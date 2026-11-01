@@ -1,3 +1,4 @@
+# Python
 venv/
 .env
 __pycache__/
@@ -5,3 +6,12 @@ chroma_data/
 data/cache/
 data/chunks/
 data/*.pdf
+
+# .NET
+**/bin/
+**/obj/
+*.user
+*.suo
+
+# Modelos de ML (ONNX + tokenizadores, no se versionan)
+models/

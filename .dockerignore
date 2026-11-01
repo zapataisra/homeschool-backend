@@ -1,0 +1,28 @@
+# Git
+.git/
+.gitignore
+
+# IDE / editor
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Python (no forma parte de la API .NET)
+venv/
+app/
+data/
+vectordb/
+requirements.txt
+revisar_texto.py
+.clinerules
+
+# Secretos
+.env
+
+# Modelos de ML (se montan en runtime; no se incluyen en la imagen)
+models/
+
+# Artefactos de compilación .NET
+**/bin/
+**/obj/
