@@ -13,7 +13,7 @@ public class SearchLoggingTests
         const string secretQuestion = "PREGUNTA_SECRETA_XYZ_123";
         const string secretFragment = "FRAGMENTO_SECRETO_ABC_456";
 
-        var sink = new LogSink();
+        var sink = new InMemoryLogSink();
         using var loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(sink));
 
         var repository = new FakeEmbeddingRepository(new SearchOutcome(
@@ -38,47 +38,4 @@ public class SearchLoggingTests
         Assert.DoesNotContain(secretFragment, allLogs);
     }
 
-    private sealed class LogSink : ILoggerProvider
-    {
-        private readonly List<string> _messages = new();
-
-        public IReadOnlyList<string> Messages => _messages;
-
-        public ILogger CreateLogger(string categoryName) => new SinkLogger(_messages);
-
-        public void Dispose()
-        {
-        }
-
-        private sealed class SinkLogger : ILogger
-        {
-            private readonly List<string> _messages;
-
-            public SinkLogger(List<string> messages) => _messages = messages;
-
-            public IDisposable? BeginScope<TState>(TState state) where TState : notnull
-                => NullScope.Instance;
-
-            public bool IsEnabled(LogLevel logLevel) => true;
-
-            public void Log<TState>(
-                LogLevel logLevel,
-                EventId eventId,
-                TState state,
-                Exception? exception,
-                Func<TState, Exception?, string> formatter)
-            {
-                _messages.Add(formatter(state, exception));
-            }
-        }
-
-        private sealed class NullScope : IDisposable
-        {
-            public static readonly NullScope Instance = new();
-
-            public void Dispose()
-            {
-            }
-        }
-    }
 }

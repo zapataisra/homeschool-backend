@@ -7,13 +7,19 @@ using Serilog.Events;
 using Serilog.Formatting.Compact;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 using HomeschoolAI.Adapters.Embedding;
 using HomeschoolAI.Adapters.Persistence;
+using HomeschoolAI.Adapters.SemanticKernel;
 using HomeschoolAI.Api.Endpoints;
 using HomeschoolAI.Api.Middleware;
+using HomeschoolAI.Application.Chat;
 using HomeschoolAI.Application.Ports;
 using HomeschoolAI.Application.Search;
 using HomeschoolAI.Application.Telemetry;
+using HomeschoolAI.Domain.Conversation;
 using HomeschoolAI.Domain.Embedding;
 using HomeschoolAI.Domain.Repositories;
 
@@ -85,8 +91,55 @@ builder.Services.AddSingleton<IQueryEmbedder>(sp => new OnnxQueryEmbedder(
     sp.GetRequiredService<ILogger<OnnxQueryEmbedder>>()));
 
 // Puertos de la arquitectura hexagonal.
-builder.Services.AddScoped<IEmbeddingRepository, EmbeddingRepository>();
-builder.Services.AddScoped<ISearchService, SearchService>();
+// Singleton: SearchService y EmbeddingRepository son sin estado y thread-safe
+// (solo dependen de NpgsqlDataSource e IQueryEmbedder, ambos Singleton), lo que
+// permite que el agente (también Singleton) los componga sin desajuste de lifetimes.
+builder.Services.AddSingleton<IEmbeddingRepository, EmbeddingRepository>();
+builder.Services.AddSingleton<ISearchService, SearchService>();
+
+// Semantic Kernel: Kernel Singleton con el chat completion de OpenAI y el plugin de currículo.
+// El plugin llama al puerto de entrada ISearchService (nunca al DbContext).
+var openAiApiKey = builder.Configuration["OpenAI:ApiKey"]
+    ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+var openAiModelId = builder.Configuration["OpenAI:ModelId"]
+    ?? Environment.GetEnvironmentVariable("OPENAI_MODEL_ID")
+    ?? "gpt-4o-mini";
+
+builder.Services.AddSingleton<CurriculumPlugin>();
+builder.Services.AddSingleton<IAgentCompletionService, SemanticKernelAgentCompletionService>();
+builder.Services.AddSingleton<IConversationStore, InMemoryConversationStore>();
+builder.Services.AddSingleton<IChatService, ChatService>();
+
+builder.Services.AddSingleton<Kernel>(sp =>
+{
+    var kernelBuilder = Kernel.CreateBuilder();
+
+    if (!string.IsNullOrWhiteSpace(openAiApiKey))
+    {
+        kernelBuilder.AddOpenAIChatCompletion(modelId: openAiModelId, apiKey: openAiApiKey);
+    }
+    else
+    {
+        sp.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("SemanticKernel")
+            .LogWarning("OPENAI_API_KEY no está configurada: el endpoint /api/agent/chat responderá con error hasta que se defina.");
+    }
+
+    var kernel = kernelBuilder.Build();
+    kernel.Plugins.AddFromObject(sp.GetRequiredService<CurriculumPlugin>(), "curriculum");
+    return kernel;
+});
+
+// Limitación de tasa para el endpoint que llama a un LLM (OWASP: disponibilidad y coste).
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("agent", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 20;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+    });
+});
 
 var app = builder.Build();
 
@@ -95,8 +148,12 @@ app.UseMiddleware<CorrelationMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+// Limitación de tasa (antes de los endpoints).
+app.UseRateLimiter();
+
 app.MapGet("/", () => "HomeschoolAI API");
 app.MapSearchEndpoints();
+app.MapAgentEndpoints();
 
 app.Logger.LogInformation("HomeschoolAI API arrancada en el entorno {Environment}", app.Environment.EnvironmentName);
 
