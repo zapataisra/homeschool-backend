@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using HomeschoolAI.Adapters.Embedding;
+using HomeschoolAI.Adapters.Identity;
 using HomeschoolAI.Adapters.Persistence;
 using HomeschoolAI.Adapters.SemanticKernel;
 using HomeschoolAI.Api.Endpoints;
@@ -66,6 +67,13 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
         "No se encontró la cadena de conexión. Configura 'ConnectionStrings:DefaultConnection' "
         + "(o la variable de entorno ConnectionStrings__DefaultConnection).");
 
+// Conexión de escritura/DDL para el contexto de identidad (esquema app_identity).
+// DefaultConnection (solo lectura) se mantiene intacta para el RAG sobre embeddings_sep.
+var identityConnectionString = builder.Configuration.GetConnectionString("IdentityConnection")
+    ?? throw new InvalidOperationException(
+        "No se encontró la cadena de conexión de identidad. Configura 'ConnectionStrings:IdentityConnection' "
+        + "(o la variable de entorno ConnectionStrings__IdentityConnection).");
+
 // pgvector (Npgsql): registra el tipo `vector` para las consultas crudas del repositorio.
 builder.Services.AddSingleton<NpgsqlDataSource>(_ =>
 {
@@ -78,6 +86,10 @@ builder.Services.AddSingleton<NpgsqlDataSource>(_ =>
 // NO se ejecutan migraciones: la BD fue creada y poblada desde el pipeline Python.
 builder.Services.AddDbContext<HomeschoolDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql => npgsql.UseVector()));
+
+// Identidad y accesos: contexto de escritura en el esquema `app_identity`.
+// Usa IdentityConnection (escritura/DDL); DefaultConnection (solo lectura) queda para el RAG.
+builder.Services.AddHomeschoolIdentity(identityConnectionString);
 
 // Embedder ONNX: Singleton. InferenceSession es costoso de crear y thread-safe;
 // el contenedor lo desecha (Dispose) una sola vez al apagar la aplicación.

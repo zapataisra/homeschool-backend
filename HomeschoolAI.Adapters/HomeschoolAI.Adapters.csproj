@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.11" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.20.0" />
     <PackageReference Include="Microsoft.ML.Tokenizers" Version="1.0.3" />
@@ -20,6 +21,13 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
     <PackageReference Include="Pgvector" Version="0.3.2" />
     <PackageReference Include="Pgvector.EntityFrameworkCore" Version="0.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- FrameworkReference a ASP.NET Core para poder usar ASP.NET Core Identity completo
+         (Data Protection y AddDefaultTokenProviders) desde Adapters. Adapters es
+         infraestructura de una Web API, así que esta referencia es correcta. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
 </Project>

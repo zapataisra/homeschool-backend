@@ -23,3 +23,7 @@ logs/
 # Datos de paridad (generados por parity_check.py)
 parity_check.py
 parity_data.json
+
+#instrucciones para cline
+DISENO_ACCESO_PAGOS.md 
+CONTRATO.md

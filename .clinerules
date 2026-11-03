@@ -1,6 +1,11 @@
 # HomeschoolAI: reglas de arquitectura, reutilización y seguridad
 
 Estas reglas son obligatorias. Si una petición las contradice, DETENTE y pregunta antes de escribir código. Si dudas de un nombre de paquete, API, versión o configuración, verifícalo en la documentación oficial; no lo inventes.
+## 0. FUENTE DE VERDAD DEL PRODUCTO (LECTURA OBLIGATORIA)
+Antes de proponer, escribir o modificar cualquier código, DEBES leer el diseño de producto y negocio en:
+1. `docs/ai/CONTRATO.md` (Objetivo, gamificación, Kanban RPG, sesión Feynman, agentes).
+2. `docs/ai/DISENO_ACCESO_PAGOS.md` (Identidad, roles Owner/Guardian/Child, sesión delegada, aislamiento).
+Nunca propongas flujos que contradigan la lógica de negocio de estos documentos. Si una petición del usuario los viola, adviértelo antes de proceder.
 
 ## 1. Visión general
 
@@ -177,8 +182,6 @@ Una tarea está terminada solo si:
 
 ## 10. Decisiones pendientes (no las resuelvas por tu cuenta)
 
-- Implementación de `IQueryEmbedder`: ONNX local en C#, microservicio Python o API externa. Debe usar el modelo guardado en `embedding_model`.
-- Semantic Kernel o Microsoft Agent Framework para .NET (hoy se usa Semantic Kernel; verifica el estado vigente).
 - Identidad: sesión por cookie o por tokens; aislamiento por familia con filtros de EF Core, con o sin Row-Level Security.
 - Esquema y `DbContext` separados para identidad y pagos (ver sección 8, punto 2).
 - Destino de los logs en producción: salida estándar, archivo, un visor local o OpenTelemetry. Hoy: consola en JSON.
