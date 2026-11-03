@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using HomeschoolAI.Application.Ports;
+using HomeschoolAI.Domain.Auth;
 
 namespace HomeschoolAI.Adapters.Identity;
 
@@ -65,6 +67,18 @@ public static class IdentityServiceCollectionExtensions
                     return Task.CompletedTask;
                 };
             });
+
+        // Contexto del usuario autenticado (claims de la cookie).
+        services.AddHttpContextAccessor();
+        services.AddScoped<IUserClaimsPrincipalFactory<FamilyMember>, FamilyMemberClaimsPrincipalFactory>();
+        services.AddScoped<IUserContextProvider, HttpUserContextProvider>();
+
+        // Servicios de autenticación y de familia (aislamiento por FamilyId).
+        services.AddScoped<IAuthService, IdentityAuthService>();
+        services.AddScoped<IFamilyService, IdentityFamilyService>();
+
+        // Políticas de autorización por rol (Owner, Guardian, Child).
+        services.AddHomeschoolAuthorization();
 
         return services;
     }

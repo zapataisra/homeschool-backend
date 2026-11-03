@@ -151,6 +151,11 @@ builder.Services.AddRateLimiter(options =>
         limiterOptions.PermitLimit = 20;
         limiterOptions.Window = TimeSpan.FromMinutes(1);
     });
+    options.AddFixedWindowLimiter("auth", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 10;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+    });
 });
 
 var app = builder.Build();
@@ -163,9 +168,15 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 // Limitación de tasa (antes de los endpoints).
 app.UseRateLimiter();
 
+// Autenticación y autorización (cookies).
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapGet("/", () => "HomeschoolAI API");
 app.MapSearchEndpoints();
 app.MapAgentEndpoints();
+app.MapAuthEndpoints();
+app.MapFamilyEndpoints();
 
 app.Logger.LogInformation("HomeschoolAI API arrancada en el entorno {Environment}", app.Environment.EnvironmentName);
 
@@ -176,5 +187,10 @@ try
 finally
 {
     Log.CloseAndFlush();
+}
+
+// Expone la clase Program para las pruebas de integración (WebApplicationFactory).
+public partial class Program
+{
 }
 
