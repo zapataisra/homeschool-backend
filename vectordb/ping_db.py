@@ -1,8 +1,18 @@
 import time
+import os
 import psycopg
+from dotenv import load_dotenv
 
-# Cadena de conexión basada en el docker-compose
-DB_URL = "postgresql://admin:password123@localhost:5432/vectordb"
+load_dotenv()
+
+# Cadena de conexión construida desde variables de entorno (.env)
+DB_USER = os.getenv("POSTGRES_USER")
+DB_PASS = os.getenv("POSTGRES_PASSWORD")
+DB_NAME = os.getenv("POSTGRES_DB")
+DB_HOST = os.getenv("POSTGRES_HOST", "localhost")
+DB_PORT = os.getenv("POSTGRES_PORT", "5432")
+
+DB_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 def measure_connection():
     print("Iniciando prueba de latencia (Cold Start)...")

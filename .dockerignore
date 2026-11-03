@@ -23,6 +23,10 @@ revisar_texto.py
 # Modelos de ML (se montan en runtime; no se incluyen en la imagen)
 models/
 
+# Logs (se montan en runtime; no se incluyen en la imagen)
+logs/
+*.log
+
 # Artefactos de compilación .NET
 **/bin/
 **/obj/

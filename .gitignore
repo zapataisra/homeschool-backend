@@ -15,3 +15,11 @@ data/*.pdf
 
 # Modelos de ML (ONNX + tokenizadores, no se versionan)
 models/
+
+# Logs
+logs/
+*.log
+
+# Datos de paridad (generados por parity_check.py)
+parity_check.py
+parity_data.json

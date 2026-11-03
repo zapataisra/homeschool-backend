@@ -20,7 +20,7 @@ public sealed class CorrelationMiddleware
         var correlationId = Activity.Current?.TraceId.ToString() ?? context.TraceIdentifier;
         context.Items[CorrelationIdKey] = correlationId;
 
-        using (_logger.BeginScope("CorrelationId: {CorrelationId}", correlationId))
+        using (_logger.BeginScope(new Dictionary<string, object?> { [CorrelationIdKey] = correlationId }))
         {
             await _next(context);
         }

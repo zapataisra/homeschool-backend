@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using Pgvector;
+using HomeschoolAI.Application.Telemetry;
 using HomeschoolAI.Domain.Repositories;
 using HomeschoolAI.Domain.Retrieval;
 
@@ -77,6 +78,9 @@ public sealed partial class EmbeddingRepository : IEmbeddingRepository
         int pool,
         CancellationToken cancellationToken = default)
     {
+        using var activity = ApplicationTelemetry.ActivitySource.StartActivity("retrieval");
+        activity?.SetTag("search.mode", mode.ToString());
+
         var tsQuery = BuildTsQuery(question);
         var degraded = false;
 
@@ -154,6 +158,8 @@ public sealed partial class EmbeddingRepository : IEmbeddingRepository
             LogSqlError(_logger, mode, stopwatch.ElapsedMilliseconds, ex);
             throw;
         }
+
+        activity?.SetTag("search.results", results.Count);
 
         return new SearchOutcome(results, degraded);
     }

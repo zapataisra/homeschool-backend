@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Pgvector;
 using HomeschoolAI.Application.Dtos;
 using HomeschoolAI.Application.Ports;
+using HomeschoolAI.Application.Telemetry;
 using HomeschoolAI.Domain.Embedding;
 using HomeschoolAI.Domain.Repositories;
 using HomeschoolAI.Domain.Retrieval;
@@ -30,6 +31,10 @@ public sealed partial class SearchService : ISearchService
         SearchQuery query,
         CancellationToken cancellationToken = default)
     {
+        using var activity = ApplicationTelemetry.ActivitySource.StartActivity("search");
+        activity?.SetTag("search.mode", query.Mode.ToString());
+        activity?.SetTag("search.question_length", query.Question.Length);
+
         Vector? queryVector = null;
         long vectorizationMs = 0;
 
@@ -65,6 +70,9 @@ public sealed partial class SearchService : ISearchService
         {
             LogSearchDegraded(_logger, query.Mode);
         }
+
+        activity?.SetTag("search.results", outcome.Items.Count);
+        activity?.SetTag("search.degraded", outcome.Degraded);
 
         return outcome.Items
             .Select(r => new SearchChunkDto(r.Id, r.Source, r.ChunkId, r.Texto, r.Score))

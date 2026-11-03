@@ -2,28 +2,58 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Pgvector.EntityFrameworkCore;
 using Pgvector.Npgsql;
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using HomeschoolAI.Adapters.Embedding;
 using HomeschoolAI.Adapters.Persistence;
 using HomeschoolAI.Api.Endpoints;
 using HomeschoolAI.Api.Middleware;
 using HomeschoolAI.Application.Ports;
 using HomeschoolAI.Application.Search;
+using HomeschoolAI.Application.Telemetry;
 using HomeschoolAI.Domain.Embedding;
 using HomeschoolAI.Domain.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Logging: consola legible en desarrollo, JSON por salida estándar fuera de él.
-// Los niveles mínimos por espacio de nombres vienen de appsettings.json.
-builder.Logging.ClearProviders();
+// Serilog como proveedor de ILogger: consola + archivo JSON compacto (rotación diaria, 14 días).
+var loggerConfiguration = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+    .Enrich.FromLogContext();
+
 if (builder.Environment.IsDevelopment())
 {
-    builder.Logging.AddSimpleConsole(options => options.IncludeScopes = true);
+    loggerConfiguration
+        .MinimumLevel.Override("HomeschoolAI", LogEventLevel.Debug)
+        .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} => CorrelationId: {CorrelationId}{NewLine}{Exception}");
 }
 else
 {
-    builder.Logging.AddJsonConsole();
+    loggerConfiguration.WriteTo.Console(new CompactJsonFormatter());
 }
+
+loggerConfiguration.WriteTo.File(
+    new CompactJsonFormatter(),
+    "/app/logs/app-.log",
+    rollingInterval: RollingInterval.Day,
+    retainedFileCountLimit: 14,
+    flushToDiskInterval: TimeSpan.FromSeconds(2));
+
+Log.Logger = loggerConfiguration.CreateLogger();
+builder.Host.UseSerilog();
+
+// OpenTelemetry: trazado distribuido (HTTP + spans de negocio) con exportador a consola.
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService("HomeschoolAI"))
+    .WithTracing(tracing => tracing
+        .AddSource(ApplicationTelemetry.SourceName)
+        .AddAspNetCoreInstrumentation()
+        .AddConsoleExporter());
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
@@ -70,5 +100,12 @@ app.MapSearchEndpoints();
 
 app.Logger.LogInformation("HomeschoolAI API arrancada en el entorno {Environment}", app.Environment.EnvironmentName);
 
-app.Run();
+try
+{
+    app.Run();
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 

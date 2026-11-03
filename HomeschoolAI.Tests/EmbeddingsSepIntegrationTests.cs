@@ -19,11 +19,9 @@ public class EmbeddingsSepIntegrationTests
     [Fact]
     public async Task EmbeddingsSep_has_699_rows()
     {
-        // Localmente (BD expuesta en localhost:5432) no hace falta configurar nada.
-        // Dentro de Docker se sobrescribe con:
-        //   ConnectionStrings__DefaultConnection=Host=host.docker.internal;Port=5432;Database=vectordb;Username=admin;Password=password123
-        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-            ?? "Host=localhost;Port=5432;Database=vectordb;Username=admin;Password=password123";
+        // Localmente (BD en localhost:5432) configura las variables POSTGRES_* (rol app_readonly).
+        // En Docker se sobrescribe con ConnectionStrings__DefaultConnection.
+        var connectionString = TestConfiguration.GetConnectionString();
 
         var stopwatch = Stopwatch.StartNew();
 

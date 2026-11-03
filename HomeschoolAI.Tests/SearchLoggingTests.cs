@@ -1,8 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Pgvector;
 using HomeschoolAI.Application.Search;
-using HomeschoolAI.Domain.Embedding;
-using HomeschoolAI.Domain.Repositories;
 using HomeschoolAI.Domain.Retrieval;
 using Xunit;
 
@@ -39,32 +36,6 @@ public class SearchLoggingTests
         Assert.Contains(secretQuestion.Length.ToString(), allLogs);
         Assert.DoesNotContain(secretQuestion, allLogs);
         Assert.DoesNotContain(secretFragment, allLogs);
-    }
-
-    private sealed class FakeEmbeddingRepository : IEmbeddingRepository
-    {
-        private readonly SearchOutcome _outcome;
-
-        public FakeEmbeddingRepository(SearchOutcome outcome) => _outcome = outcome;
-
-        public Task<SearchOutcome> SearchAsync(
-            Vector? queryVector,
-            string question,
-            SearchMode mode,
-            int limit,
-            int pool,
-            CancellationToken cancellationToken = default)
-            => Task.FromResult(_outcome);
-    }
-
-    private sealed class FakeQueryEmbedder : IQueryEmbedder
-    {
-        private readonly float[] _vector;
-
-        public FakeQueryEmbedder(float[] vector) => _vector = vector;
-
-        public Task<float[]> EmbedAsync(string text, CancellationToken cancellationToken = default)
-            => Task.FromResult(_vector);
     }
 
     private sealed class LogSink : ILoggerProvider

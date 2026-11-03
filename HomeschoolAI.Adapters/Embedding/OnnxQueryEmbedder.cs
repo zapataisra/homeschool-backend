@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Tokenizers;
+using HomeschoolAI.Application.Telemetry;
 using HomeschoolAI.Domain.Embedding;
 
 namespace HomeschoolAI.Adapters.Embedding;
@@ -28,16 +29,23 @@ public sealed partial class OnnxQueryEmbedder : IQueryEmbedder, IDisposable
         _tokenizer = BertTokenizer.Create(vocabPath, new BertOptions
         {
             LowerCaseBeforeTokenization = true,   // all-MiniLM-L6-v2 es uncased
-            ApplyBasicTokenization = true
+            ApplyBasicTokenization = true,
+            RemoveNonSpacingMarks = true          // strip de acentos (é -> e), igual que BERT uncased
         });
+
+        LogModelLoaded(_logger, modelPath);
     }
 
     public Task<float[]> EmbedAsync(string text, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        using var activity = ApplicationTelemetry.ActivitySource.StartActivity("embedding");
+        activity?.SetTag("embedding.dimension", EmbeddingDimension);
+
         var ids = _tokenizer.EncodeToIds(text);
         var sequenceLength = ids.Count + 2;   // [CLS] + tokens + [SEP]
+        activity?.SetTag("embedding.tokens", sequenceLength);
 
         var inputIds = new long[sequenceLength];
         var attentionMask = new long[sequenceLength];
@@ -99,6 +107,10 @@ public sealed partial class OnnxQueryEmbedder : IQueryEmbedder, IDisposable
     {
         _session.Dispose();
     }
+
+    [LoggerMessage(EventId = 4000, Level = LogLevel.Information,
+        Message = "Modelo ONNX cargado desde {ModelPath}")]
+    private static partial void LogModelLoaded(ILogger logger, string modelPath);
 
     [LoggerMessage(EventId = 4001, Level = LogLevel.Debug,
         Message = "Embedding generado: dimensiones {Dimensions}, tokens {TokenCount}, duración {ElapsedMs}ms")]
