@@ -24,6 +24,14 @@ services:
     depends_on:
       - db
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
+
   api:
     build:
       context: ..
@@ -37,6 +45,9 @@ services:
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_READONLY_USER};Password=${POSTGRES_READONLY_PASSWORD}"
       ConnectionStrings__IdentityConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_IDENTITY_RW_USER};Password=${POSTGRES_IDENTITY_RW_PASSWORD}"
       OPENAI__ApiKey: ${OPENAI_API_KEY}
+      Email__Host: mailpit
+      Email__Port: "1025"
+      Email__From: "no-reply@homeschool.local"
     ports:
       - "127.0.0.1:8080:8080"
     volumes:
@@ -61,6 +72,9 @@ services:
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_READONLY_USER};Password=${POSTGRES_READONLY_PASSWORD}"
       ConnectionStrings__IdentityConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_IDENTITY_RW_USER};Password=${POSTGRES_IDENTITY_RW_PASSWORD}"
       OPENAI__ApiKey: ${OPENAI_API_KEY}
+      Email__Host: mailpit
+      Email__Port: "1025"
+      Email__From: "no-reply@homeschool.local"
       EMBEDDING_MODEL_DIR: /app/models/all-MiniLM-L6-v2
     ports:
       - "127.0.0.1:8081:8080"

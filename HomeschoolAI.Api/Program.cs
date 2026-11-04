@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using HomeschoolAI.Adapters.Embedding;
+using HomeschoolAI.Adapters.Email;
 using HomeschoolAI.Adapters.Identity;
 using HomeschoolAI.Adapters.Persistence;
 using HomeschoolAI.Adapters.SemanticKernel;
@@ -90,6 +91,7 @@ builder.Services.AddDbContext<HomeschoolDbContext>(options =>
 // Identidad y accesos: contexto de escritura en el esquema `app_identity`.
 // Usa IdentityConnection (escritura/DDL); DefaultConnection (solo lectura) queda para el RAG.
 builder.Services.AddHomeschoolIdentity(identityConnectionString);
+builder.Services.AddHomeschoolEmail(builder.Configuration);
 
 // Embedder ONNX: Singleton. InferenceSession es costoso de crear y thread-safe;
 // el contenedor lo desecha (Dispose) una sola vez al apagar la aplicación.

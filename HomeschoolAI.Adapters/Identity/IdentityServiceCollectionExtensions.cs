@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using HomeschoolAI.Adapters.Email;
 using HomeschoolAI.Application.Ports;
 using HomeschoolAI.Domain.Auth;
 
@@ -43,6 +44,9 @@ public static class IdentityServiceCollectionExtensions
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders()
             .AddSignInManager();
+
+        // Registro del envío de correo para Identity (confirmación/recuperación).
+        services.AddScoped<IEmailSender<FamilyMember>, IdentityEmailSender>();
 
         // ADR (semana 3): cookies (HttpOnly, Secure, SameSite) para la PWA.
         // Al ser una API REST, las redirecciones devuelven 401/403 en lugar de vistas HTML.
