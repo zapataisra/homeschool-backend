@@ -7,12 +7,15 @@ namespace HomeschoolAI.Tests;
 
 public class ConversationStoreTests
 {
+    private const string UserA = "user-a";
+    private const string UserB = "user-b";
+
     [Fact]
     public async Task Store_returns_empty_history_for_unknown_thread()
     {
         var store = new InMemoryConversationStore(NullLogger<InMemoryConversationStore>.Instance);
 
-        var history = await store.GetOrCreateAsync("abc");
+        var history = await store.GetOrCreateAsync(UserA, "abc");
 
         Assert.Equal("abc", history.ThreadId);
         Assert.Empty(history.Messages);
@@ -29,14 +32,28 @@ public class ConversationStoreTests
             new(ConversationRole.Assistant, "¡Hola! ¿En qué te ayudo?")
         };
 
-        await store.SaveAsync(new ConversationHistory("hilo-1", messages));
+        await store.SaveAsync(UserA, new ConversationHistory("hilo-1", messages));
 
-        var history = await store.GetOrCreateAsync("hilo-1");
+        var history = await store.GetOrCreateAsync(UserA, "hilo-1");
         Assert.Equal(2, history.Messages.Count);
         Assert.Equal(ConversationRole.Assistant, history.Messages[1].Role);
 
-        var other = await store.GetOrCreateAsync("hilo-2");
+        var other = await store.GetOrCreateAsync(UserA, "hilo-2");
         Assert.Empty(other.Messages);
+    }
+
+    [Fact]
+    public async Task Store_isolates_threads_by_user()
+    {
+        var store = new InMemoryConversationStore(NullLogger<InMemoryConversationStore>.Instance);
+
+        await store.SaveAsync(UserA, new ConversationHistory("t1", new[] { new ConversationMessage(ConversationRole.User, "hola") }));
+
+        var historyA = await store.GetOrCreateAsync(UserA, "t1");
+        Assert.Single(historyA.Messages);
+
+        var historyB = await store.GetOrCreateAsync(UserB, "t1");
+        Assert.Empty(historyB.Messages);
     }
 
     [Fact]
@@ -46,13 +63,13 @@ public class ConversationStoreTests
             NullLogger<InMemoryConversationStore>.Instance,
             idleTimeout: TimeSpan.FromMilliseconds(100));
 
-        await store.SaveAsync(new ConversationHistory(
+        await store.SaveAsync(UserA, new ConversationHistory(
             "expirable",
             new[] { new ConversationMessage(ConversationRole.User, "hola") }));
 
         await Task.Delay(300);
 
-        var history = await store.GetOrCreateAsync("expirable");
+        var history = await store.GetOrCreateAsync(UserA, "expirable");
         Assert.Empty(history.Messages);
     }
 }

@@ -2,7 +2,9 @@ using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using HomeschoolAI.Application.Ports;
 using HomeschoolAI.Application.Telemetry;
+using HomeschoolAI.Domain.Auth;
 using HomeschoolAI.Domain.Conversation;
+using HomeschoolAI.Domain.Exceptions;
 
 namespace HomeschoolAI.Application.Chat;
 
@@ -17,24 +19,34 @@ public sealed partial class ChatService : IChatService
 
     private readonly IConversationStore _store;
     private readonly IAgentCompletionService _completion;
+    private readonly IUserContextProvider _userContextProvider;
     private readonly ILogger<ChatService> _logger;
 
-    public ChatService(IConversationStore store, IAgentCompletionService completion, ILogger<ChatService> logger)
+    public ChatService(
+        IConversationStore store,
+        IAgentCompletionService completion,
+        IUserContextProvider userContextProvider,
+        ILogger<ChatService> logger)
     {
         _store = store;
         _completion = completion;
+        _userContextProvider = userContextProvider;
         _logger = logger;
     }
 
     public async Task<ChatResponse> SendAsync(ChatRequest request, CancellationToken cancellationToken = default)
     {
+        var user = await _userContextProvider.GetAsync(cancellationToken)
+            ?? throw new InvalidCredentialsException();
+        var userId = user.FamilyMemberId;
+
         using var activity = ApplicationTelemetry.ActivitySource.StartActivity("chat");
         activity?.SetTag("chat.message_length", request.Message.Length);
 
         var isNewThread = string.IsNullOrWhiteSpace(request.ThreadId);
         var threadId = isNewThread ? Guid.NewGuid().ToString("N") : request.ThreadId!.Trim();
 
-        var history = await _store.GetOrCreateAsync(threadId, cancellationToken);
+        var history = await _store.GetOrCreateAsync(userId, threadId, cancellationToken);
 
         var withUser = history with
         {
@@ -48,7 +60,7 @@ public sealed partial class ChatService : IChatService
         var messages = withUser.Messages.Append(new ConversationMessage(ConversationRole.Assistant, reply)).ToList();
         var withAssistant = withUser with { Messages = Trim(messages) };
 
-        await _store.SaveAsync(withAssistant, cancellationToken);
+        await _store.SaveAsync(userId, withAssistant, cancellationToken);
 
         LogChatCompleted(_logger, isNewThread, request.Message.Length, reply.Length, stopwatch.ElapsedMilliseconds);
         activity?.SetTag("chat.new_thread", isNewThread);

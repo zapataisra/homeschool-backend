@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Pgvector;
+using HomeschoolAI.Domain.Auth;
 using HomeschoolAI.Domain.Conversation;
 using HomeschoolAI.Domain.Embedding;
 using HomeschoolAI.Domain.Repositories;
@@ -37,9 +38,10 @@ public sealed class FakeConversationStore : IConversationStore
 {
     private readonly Dictionary<string, ConversationHistory> _threads = new();
 
-    public Task<ConversationHistory> GetOrCreateAsync(string threadId, CancellationToken cancellationToken = default)
+    public Task<ConversationHistory> GetOrCreateAsync(string userId, string threadId, CancellationToken cancellationToken = default)
     {
-        if (_threads.TryGetValue(threadId, out var history))
+        var key = $"{userId}:{threadId}";
+        if (_threads.TryGetValue(key, out var history))
         {
             return Task.FromResult(history);
         }
@@ -47,14 +49,23 @@ public sealed class FakeConversationStore : IConversationStore
         return Task.FromResult(new ConversationHistory(threadId, Array.Empty<ConversationMessage>()));
     }
 
-    public Task SaveAsync(ConversationHistory history, CancellationToken cancellationToken = default)
+    public Task SaveAsync(string userId, ConversationHistory history, CancellationToken cancellationToken = default)
     {
-        _threads[history.ThreadId] = history;
+        _threads[$"{userId}:{history.ThreadId}"] = history;
         return Task.CompletedTask;
     }
 
-    public ConversationHistory? Get(string threadId) =>
-        _threads.TryGetValue(threadId, out var history) ? history : null;
+    public ConversationHistory? Get(string userId, string threadId) =>
+        _threads.TryGetValue($"{userId}:{threadId}", out var history) ? history : null;
+}
+
+public sealed class FakeUserContextProvider : IUserContextProvider
+{
+    private readonly UserContext? _context;
+
+    public FakeUserContextProvider(UserContext? context = null) => _context = context;
+
+    public Task<UserContext?> GetAsync(CancellationToken cancellationToken = default) => Task.FromResult(_context);
 }
 
 public sealed class FakeAgentCompletionService : IAgentCompletionService

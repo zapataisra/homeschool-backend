@@ -27,15 +27,17 @@ public sealed partial class InMemoryConversationStore : IConversationStore
         _maxThreads = maxThreads;
     }
 
-    public Task<ConversationHistory> GetOrCreateAsync(string threadId, CancellationToken cancellationToken = default)
+    public Task<ConversationHistory> GetOrCreateAsync(string userId, string threadId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (_threads.TryGetValue(threadId, out var entry))
+        var key = Key(userId, threadId);
+
+        if (_threads.TryGetValue(key, out var entry))
         {
             if (DateTimeOffset.UtcNow - entry.LastAccessed > _idleTimeout)
             {
-                _threads.TryRemove(threadId, out _);
+                _threads.TryRemove(key, out _);
                 LogThreadExpired(_logger, threadId.Length);
                 return Task.FromResult(new ConversationHistory(threadId, Array.Empty<ConversationMessage>()));
             }
@@ -47,18 +49,22 @@ public sealed partial class InMemoryConversationStore : IConversationStore
         return Task.FromResult(new ConversationHistory(threadId, Array.Empty<ConversationMessage>()));
     }
 
-    public Task SaveAsync(ConversationHistory history, CancellationToken cancellationToken = default)
+    public Task SaveAsync(string userId, ConversationHistory history, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!_threads.ContainsKey(history.ThreadId) && _threads.Count >= _maxThreads)
+        var key = Key(userId, history.ThreadId);
+
+        if (!_threads.ContainsKey(key) && _threads.Count >= _maxThreads)
         {
             EvictOldest();
         }
 
-        _threads[history.ThreadId] = new Entry(history, DateTimeOffset.UtcNow);
+        _threads[key] = new Entry(history, DateTimeOffset.UtcNow);
         return Task.CompletedTask;
     }
+
+    private static string Key(string userId, string threadId) => $"{userId}:{threadId}";
 
     private void EvictOldest()
     {

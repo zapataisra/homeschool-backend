@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using HomeschoolAI.Application.Chat;
 using HomeschoolAI.Application.Ports;
@@ -50,7 +51,8 @@ public static class AgentEndpoints
                 return Results.Ok(response);
             })
             .WithName("AgentChat")
-            .RequireRateLimiting("agent");
+            .RequireRateLimiting("agent")
+            .RequireAuthorization();
     }
 
     private static bool IsValidThreadId(string value)

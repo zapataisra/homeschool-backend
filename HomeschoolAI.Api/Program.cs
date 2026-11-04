@@ -120,7 +120,7 @@ var openAiModelId = builder.Configuration["OpenAI:ModelId"]
 builder.Services.AddSingleton<CurriculumPlugin>();
 builder.Services.AddSingleton<IAgentCompletionService, SemanticKernelAgentCompletionService>();
 builder.Services.AddSingleton<IConversationStore, InMemoryConversationStore>();
-builder.Services.AddSingleton<IChatService, ChatService>();
+builder.Services.AddScoped<IChatService, ChatService>();
 
 builder.Services.AddSingleton<Kernel>(sp =>
 {

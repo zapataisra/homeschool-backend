@@ -7,7 +7,7 @@ namespace HomeschoolAI.Domain.Conversation;
 /// </summary>
 public interface IConversationStore
 {
-    Task<ConversationHistory> GetOrCreateAsync(string threadId, CancellationToken cancellationToken = default);
+    Task<ConversationHistory> GetOrCreateAsync(string userId, string threadId, CancellationToken cancellationToken = default);
 
-    Task SaveAsync(ConversationHistory history, CancellationToken cancellationToken = default);
+    Task SaveAsync(string userId, ConversationHistory history, CancellationToken cancellationToken = default);
 }
