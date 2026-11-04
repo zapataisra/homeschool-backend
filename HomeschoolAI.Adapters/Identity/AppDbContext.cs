@@ -44,6 +44,7 @@ public sealed class AppDbContext : IdentityDbContext<FamilyMember>
             entity.Property(f => f.Id).HasColumnName("id").ValueGeneratedOnAdd();
             entity.Property(f => f.Name).HasColumnName("name").IsRequired().HasMaxLength(200);
             entity.Property(f => f.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+            entity.Property(f => f.IsPremium).HasColumnName("is_premium").IsRequired().HasDefaultValue(false);
         });
 
         builder.Entity<FamilyMember>(entity =>

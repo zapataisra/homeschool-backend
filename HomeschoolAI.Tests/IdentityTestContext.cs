@@ -20,6 +20,9 @@ public sealed class IdentityTestContext : IAsyncLifetime
 {
     public const string TestDatabaseName = "vectordb_test";
 
+    /// <summary>Secreto de firma de Stripe en las pruebas; el test de webhook firma con este mismo valor.</summary>
+    public const string TestStripeWebhookSecret = "whsec_test_webhook_secret_for_tests_1234567890";
+
     private WebApplicationFactory<Program>? _factory;
 
     public WebApplicationFactory<Program> Factory => _factory!;
@@ -31,6 +34,12 @@ public sealed class IdentityTestContext : IAsyncLifetime
         // Program.cs lee ConnectionStrings:IdentityConnection de la configuración
         // (variables de entorno). No toco DefaultConnection: lo usan otras pruebas.
         Environment.SetEnvironmentVariable("ConnectionStrings__IdentityConnection", testConnection);
+
+        // Stripe en modo de prueba: secretos falsos para que el host arranque y el webhook
+        // pueda validar firmas generadas con el MISMO secreto (TestStripeWebhookSecret).
+        Environment.SetEnvironmentVariable("Stripe__SecretKey", "sk_test_dummy_for_tests_1234567890");
+        Environment.SetEnvironmentVariable("Stripe__WebhookSecret", TestStripeWebhookSecret);
+        Environment.SetEnvironmentVariable("Stripe__PriceId", "price_test_dummy");
 
         _factory = new ApiWebApplicationFactory();
     }

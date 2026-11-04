@@ -13,6 +13,7 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 using HomeschoolAI.Adapters.Embedding;
 using HomeschoolAI.Adapters.Email;
 using HomeschoolAI.Adapters.Identity;
+using HomeschoolAI.Adapters.Payments;
 using HomeschoolAI.Adapters.Persistence;
 using HomeschoolAI.Adapters.SemanticKernel;
 using HomeschoolAI.Api.Endpoints;
@@ -94,6 +95,7 @@ builder.Services.AddDbContext<HomeschoolDbContext>(options =>
 builder.Services.AddHomeschoolIdentity(identityConnectionString);
 builder.Services.AddHomeschoolEmail(builder.Configuration);
 builder.Services.AddApplication();
+builder.Services.AddPayments(builder.Configuration);
 
 // Embedder ONNX: Singleton. InferenceSession es costoso de crear y thread-safe;
 // el contenedor lo desecha (Dispose) una sola vez al apagar la aplicación.
@@ -169,8 +171,12 @@ app.UseMiddleware<CorrelationMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// Limitación de tasa (antes de los endpoints).
-app.UseRateLimiter();
+// Limitación de tasa (antes de los endpoints). Se omite en el entorno de pruebas:
+// la suite de integración comparte una única IP y agotaría la cuota del limitador.
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    app.UseRateLimiter();
+}
 
 // Autenticación y autorización (cookies).
 app.UseAuthentication();
@@ -182,6 +188,7 @@ app.MapAgentEndpoints();
 app.MapAuthEndpoints();
 app.MapFamilyEndpoints();
 app.MapEvaluationEndpoints();
+app.MapPaymentEndpoints();
 
 app.Logger.LogInformation("HomeschoolAI API arrancada en el entorno {Environment}", app.Environment.EnvironmentName);
 

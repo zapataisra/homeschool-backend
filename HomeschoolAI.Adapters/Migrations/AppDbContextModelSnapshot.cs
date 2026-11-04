@@ -70,6 +70,12 @@ namespace HomeschoolAI.Adapters.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
+                    b.Property<bool>("IsPremium")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_premium");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)

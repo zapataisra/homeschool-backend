@@ -45,6 +45,9 @@ services:
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_READONLY_USER};Password=${POSTGRES_READONLY_PASSWORD}"
       ConnectionStrings__IdentityConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_IDENTITY_RW_USER};Password=${POSTGRES_IDENTITY_RW_PASSWORD}"
       OPENAI__ApiKey: ${OPENAI_API_KEY}
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY}
+      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}
+      Stripe__PriceId: ${STRIPE_PRICE_ID}
       Email__Host: mailpit
       Email__Port: "1025"
       Email__From: "no-reply@homeschool.local"
@@ -72,6 +75,9 @@ services:
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_READONLY_USER};Password=${POSTGRES_READONLY_PASSWORD}"
       ConnectionStrings__IdentityConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_IDENTITY_RW_USER};Password=${POSTGRES_IDENTITY_RW_PASSWORD}"
       OPENAI__ApiKey: ${OPENAI_API_KEY}
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY}
+      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}
+      Stripe__PriceId: ${STRIPE_PRICE_ID}
       Email__Host: mailpit
       Email__Port: "1025"
       Email__From: "no-reply@homeschool.local"
