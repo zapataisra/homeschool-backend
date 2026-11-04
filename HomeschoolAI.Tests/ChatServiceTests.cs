@@ -122,4 +122,17 @@ public class ChatServiceTests
         Assert.Contains(secretQuestion.Length.ToString(), allLogs);
         Assert.DoesNotContain(secretQuestion, allLogs);
     }
+
+    [Fact]
+    public async Task Chat_passes_lumi_system_prompt_to_the_completion_service()
+    {
+        var store = new FakeConversationStore();
+        var completion = new FakeAgentCompletionService { Reply = "respuesta" };
+        var service = BuildService(store, completion, UserA, NullLogger<ChatService>.Instance);
+
+        await service.SendAsync(new ChatRequest { Message = "hola" });
+
+        Assert.NotNull(completion.LastSystemPrompt);
+        Assert.Contains("LUMI", completion.LastSystemPrompt);
+    }
 }

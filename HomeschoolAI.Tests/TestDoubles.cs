@@ -74,9 +74,12 @@ public sealed class FakeAgentCompletionService : IAgentCompletionService
 
     public int Calls { get; private set; }
 
-    public Task<string> CompleteAsync(ConversationHistory history, CancellationToken cancellationToken = default)
+    public string? LastSystemPrompt { get; private set; }
+
+    public Task<string> CompleteAsync(ConversationHistory history, string systemPrompt, CancellationToken cancellationToken = default)
     {
         Calls++;
+        LastSystemPrompt = systemPrompt;
         return Task.FromResult(Reply);
     }
 }

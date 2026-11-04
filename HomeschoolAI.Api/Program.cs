@@ -18,6 +18,7 @@ using HomeschoolAI.Adapters.SemanticKernel;
 using HomeschoolAI.Api.Endpoints;
 using HomeschoolAI.Api.Middleware;
 using HomeschoolAI.Application.Chat;
+using HomeschoolAI.Application.DependencyInjection;
 using HomeschoolAI.Application.Ports;
 using HomeschoolAI.Application.Search;
 using HomeschoolAI.Application.Telemetry;
@@ -92,6 +93,7 @@ builder.Services.AddDbContext<HomeschoolDbContext>(options =>
 // Usa IdentityConnection (escritura/DDL); DefaultConnection (solo lectura) queda para el RAG.
 builder.Services.AddHomeschoolIdentity(identityConnectionString);
 builder.Services.AddHomeschoolEmail(builder.Configuration);
+builder.Services.AddApplication();
 
 // Embedder ONNX: Singleton. InferenceSession es costoso de crear y thread-safe;
 // el contenedor lo desecha (Dispose) una sola vez al apagar la aplicación.
