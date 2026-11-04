@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Pgvector;
+using HomeschoolAI.Application.Ports;
 using HomeschoolAI.Domain.Auth;
 using HomeschoolAI.Domain.Conversation;
 using HomeschoolAI.Domain.Embedding;
@@ -81,6 +82,17 @@ public sealed class FakeAgentCompletionService : IAgentCompletionService
         Calls++;
         LastSystemPrompt = systemPrompt;
         return Task.FromResult(Reply);
+    }
+}
+
+public sealed class FakeInteractionQuotaService : IInteractionQuotaService
+{
+    public int ConsumedCalls { get; private set; }
+
+    public Task ConsumeInteractionAsync(Guid familyId, CancellationToken cancellationToken = default)
+    {
+        ConsumedCalls++;
+        return Task.CompletedTask;
     }
 }
 

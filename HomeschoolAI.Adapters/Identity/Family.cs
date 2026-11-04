@@ -16,6 +16,9 @@ public sealed class Family
     /// <summary>True si la familia tiene la suscripción premium activa (la activa solo el webhook de Stripe).</summary>
     public bool IsPremium { get; set; }
 
+    /// <summary>Interacciones gratuitas restantes del plan freemium (las premium no consumen).</summary>
+    public int FreeInteractionsLeft { get; set; } = 20;
+
     public ICollection<FamilyMember> Members { get; set; } = new List<FamilyMember>();
 
     public ICollection<ChildProfile> Children { get; set; } = new List<ChildProfile>();

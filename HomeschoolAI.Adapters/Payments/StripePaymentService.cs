@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using Stripe;
 using Stripe.Checkout;
 using HomeschoolAI.Adapters.Identity;
 using HomeschoolAI.Application.Ports;
+using HomeschoolAI.Domain.Billing;
 using HomeschoolAI.Domain.Exceptions;
 
 namespace HomeschoolAI.Adapters.Payments;
@@ -93,6 +95,13 @@ public sealed class StripePaymentService : IPaymentService
             return;
         }
 
+        // Idempotencia: si el evento ya se procesó (reintento de Stripe), se ignora.
+        if (await _db.PaymentEvents.AnyAsync(e => e.StripeEventId == stripeEvent.Id, cancellationToken))
+        {
+            _logger.LogInformation("Evento de Stripe ya procesado (idempotencia): {EventId}.", stripeEvent.Id);
+            return;
+        }
+
         var family = await _db.Families.SingleOrDefaultAsync(f => f.Id == familyId, cancellationToken);
         if (family is null)
         {
@@ -101,8 +110,29 @@ public sealed class StripePaymentService : IPaymentService
         }
 
         family.IsPremium = true;
-        await _db.SaveChangesAsync(cancellationToken);
+        _db.PaymentEvents.Add(new PaymentEvent
+        {
+            Id = Guid.NewGuid(),
+            StripeEventId = stripeEvent.Id,
+            Type = stripeEvent.Type,
+            Result = "processed",
+            ReceivedAtUtc = DateTimeOffset.UtcNow
+        });
+
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            // Una petición concurrente ya registró este evento: idempotente.
+            _logger.LogInformation("Evento de Stripe duplicado (carrera): {EventId}.", stripeEvent.Id);
+            return;
+        }
 
         _logger.LogInformation("Suscripción premium activada para la familia {FamilyId}.", familyId);
     }
+
+    private static bool IsUniqueViolation(DbUpdateException ex) =>
+        ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
 }

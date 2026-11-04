@@ -81,6 +81,7 @@ public static class IdentityServiceCollectionExtensions
         services.AddScoped<IAuthService, IdentityAuthService>();
         services.AddScoped<IFamilyService, IdentityFamilyService>();
         services.AddScoped<IProgressService, ProgressService>();
+        services.AddScoped<IInteractionQuotaService, InteractionQuotaService>();
 
         // Políticas de autorización por rol (Owner, Guardian, Child).
         services.AddHomeschoolAuthorization();

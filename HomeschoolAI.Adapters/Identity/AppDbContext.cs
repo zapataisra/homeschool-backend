@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using HomeschoolAI.Domain.Billing;
 using HomeschoolAI.Domain.Progress;
 
 namespace HomeschoolAI.Adapters.Identity;
@@ -25,6 +26,8 @@ public sealed class AppDbContext : IdentityDbContext<FamilyMember>
 
     public DbSet<ChildProgress> ChildProgress => Set<ChildProgress>();
 
+    public DbSet<PaymentEvent> PaymentEvents => Set<PaymentEvent>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -45,6 +48,7 @@ public sealed class AppDbContext : IdentityDbContext<FamilyMember>
             entity.Property(f => f.Name).HasColumnName("name").IsRequired().HasMaxLength(200);
             entity.Property(f => f.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
             entity.Property(f => f.IsPremium).HasColumnName("is_premium").IsRequired().HasDefaultValue(false);
+            entity.Property(f => f.FreeInteractionsLeft).HasColumnName("free_interactions_left").IsRequired().HasDefaultValue(20);
         });
 
         builder.Entity<FamilyMember>(entity =>
@@ -97,6 +101,22 @@ public sealed class AppDbContext : IdentityDbContext<FamilyMember>
                 .WithOne()
                 .HasForeignKey<ChildProgress>(c => c.ChildProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<PaymentEvent>(entity =>
+        {
+            entity.ToTable("payment_events");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(e => e.StripeEventId).HasColumnName("stripe_event_id").IsRequired().HasMaxLength(128);
+            entity.Property(e => e.Type).HasColumnName("type").IsRequired().HasMaxLength(64);
+            entity.Property(e => e.Result).HasColumnName("result").IsRequired().HasMaxLength(32);
+            entity.Property(e => e.ReceivedAtUtc).HasColumnName("received_at_utc").IsRequired();
+
+            // Idempotencia: un mismo evento de Stripe solo se registra una vez.
+            entity.HasIndex(e => e.StripeEventId).IsUnique();
         });
     }
 }

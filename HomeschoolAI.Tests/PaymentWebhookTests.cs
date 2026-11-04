@@ -23,10 +23,10 @@ public class PaymentWebhookTests
     private static StringContent Json(object value) =>
         new(JsonSerializer.Serialize(value), Encoding.UTF8, "application/json");
 
-    private static string BuildCheckoutCompletedPayload(Guid familyId) =>
+    private static string BuildCheckoutCompletedPayload(Guid familyId, string? eventId = null) =>
         JsonSerializer.Serialize(new
         {
-            id = $"evt_test_{Guid.NewGuid():N}",
+            id = eventId ?? $"evt_test_{Guid.NewGuid():N}",
             @object = "event",
             type = "checkout.session.completed",
             data = new
@@ -90,6 +90,35 @@ public class PaymentWebhookTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         await AssertFamilyPremiumAsync(familyId, premium: true);
+    }
+
+    [Fact]
+    public async Task Webhook_ignores_duplicate_event_idempotently()
+    {
+        using var client = _ctx.CreateClient();
+        var familyId = await RegisterFamilyAsync(client);
+
+        const string eventId = "evt_test_duplicate_123";
+        var payload = BuildCheckoutCompletedPayload(familyId, eventId);
+        var signature = EventUtility.GenerateSignatureHeader(payload, IdentityTestContext.TestStripeWebhookSecret);
+
+        var first = new StringContent(payload, Encoding.UTF8, "application/json");
+        first.Headers.Add("Stripe-Signature", signature);
+        var second = new StringContent(payload, Encoding.UTF8, "application/json");
+        second.Headers.Add("Stripe-Signature", signature);
+
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsync("/api/payments/webhook", first)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsync("/api/payments/webhook", second)).StatusCode);
+
+        await AssertFamilyPremiumAsync(familyId, premium: true);
+
+        // El reintento se ignoró: solo un PaymentEvent registrado para este evento.
+        using (var scope = _ctx.Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var count = await db.PaymentEvents.CountAsync(e => e.StripeEventId == eventId);
+            Assert.Equal(1, count);
+        }
     }
 
     [Fact]

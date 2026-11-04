@@ -3,6 +3,7 @@ using HomeschoolAI.Adapters.Identity;
 using HomeschoolAI.Application.Evaluation;
 using HomeschoolAI.Application.Ports;
 using HomeschoolAI.Domain.Auth;
+using HomeschoolAI.Domain.Exceptions;
 
 namespace HomeschoolAI.Api.Endpoints;
 
@@ -18,6 +19,7 @@ public static class EvaluationEndpoints
                 EvaluateRequest request,
                 CriticalEvaluationService evaluationService,
                 IProgressService progressService,
+                IInteractionQuotaService quotaService,
                 IUserContextProvider userContextProvider,
                 CancellationToken cancellationToken) =>
             {
@@ -33,18 +35,20 @@ public static class EvaluationEndpoints
                     return Results.BadRequest(new { error = "El intento debe estar entre 1 y 3." });
                 }
 
+                var user = await userContextProvider.GetAsync(cancellationToken)
+                    ?? throw new ForbiddenException("No hay sesión activa.");
+
+                // Cuota freemium ANTES del LLM: no se gasta el modelo si no quedan créditos.
+                await quotaService.ConsumeInteractionAsync(user.FamilyId, cancellationToken);
+
                 var result = await evaluationService.EvaluateAsync(text, request.Attempt, DefaultBaseXp, cancellationToken);
 
                 // Solo el niño acumula XP (el Guardian evalúa pero no gana). El ChildProfileId
                 // se obtiene del claim de la cookie autenticada, nunca del cuerpo de la petición
                 // (protección IDOR: no se puede evaluar ni sumar XP al perfil de otra familia).
-                if (result.MathIsCorrect)
+                if (result.MathIsCorrect && user.ChildProfileId is { } childProfileId)
                 {
-                    var user = await userContextProvider.GetAsync(cancellationToken);
-                    if (user?.ChildProfileId is { } childProfileId)
-                    {
-                        await progressService.AddXpAsync(childProfileId, result.XpAwarded, cancellationToken);
-                    }
+                    await progressService.AddXpAsync(childProfileId, result.XpAwarded, cancellationToken);
                 }
 
                 return Results.Ok(result);

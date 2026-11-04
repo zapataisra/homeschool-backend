@@ -62,3 +62,13 @@ public sealed class ValidationException : DomainException
 
     public override int StatusCode => 400;
 }
+
+/// <summary>Requiere pago (cuota gratuita agotada). Código 402.</summary>
+public sealed class PaymentRequiredException : DomainException
+{
+    public PaymentRequiredException(string message) : base(message)
+    {
+    }
+
+    public override int StatusCode => 402;
+}

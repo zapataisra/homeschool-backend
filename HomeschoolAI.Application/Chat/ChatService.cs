@@ -28,17 +28,20 @@ public sealed partial class ChatService : IChatService
     private readonly IConversationStore _store;
     private readonly IAgentCompletionService _completion;
     private readonly IUserContextProvider _userContextProvider;
+    private readonly IInteractionQuotaService _quotaService;
     private readonly ILogger<ChatService> _logger;
 
     public ChatService(
         IConversationStore store,
         IAgentCompletionService completion,
         IUserContextProvider userContextProvider,
+        IInteractionQuotaService quotaService,
         ILogger<ChatService> logger)
     {
         _store = store;
         _completion = completion;
         _userContextProvider = userContextProvider;
+        _quotaService = quotaService;
         _logger = logger;
     }
 
@@ -47,6 +50,9 @@ public sealed partial class ChatService : IChatService
         var user = await _userContextProvider.GetAsync(cancellationToken)
             ?? throw new InvalidCredentialsException();
         var userId = user.FamilyMemberId;
+
+        // Cuota freemium: consume un crédito si la familia no es premium (lanza 402 si agotado).
+        await _quotaService.ConsumeInteractionAsync(user.FamilyId, cancellationToken);
 
         using var activity = ApplicationTelemetry.ActivitySource.StartActivity("chat");
         activity?.SetTag("chat.message_length", request.Message.Length);

@@ -17,7 +17,7 @@ public class ChatServiceTests
         FakeAgentCompletionService completion,
         string userId,
         ILogger<ChatService> logger) =>
-        new(store, completion, new FakeUserContextProvider(new UserContext(userId, Guid.NewGuid(), UserRole.Owner)), logger);
+        new(store, completion, new FakeUserContextProvider(new UserContext(userId, Guid.NewGuid(), UserRole.Owner)), new FakeInteractionQuotaService(), logger);
 
     [Fact]
     public async Task Chat_generates_thread_id_and_persists_user_and_assistant_turns()
