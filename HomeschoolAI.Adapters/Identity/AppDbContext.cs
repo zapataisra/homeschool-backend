@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using HomeschoolAI.Domain.Progress;
 
 namespace HomeschoolAI.Adapters.Identity;
 
@@ -21,6 +22,8 @@ public sealed class AppDbContext : IdentityDbContext<FamilyMember>
     public DbSet<Family> Families => Set<Family>();
 
     public DbSet<ChildProfile> ChildProfiles => Set<ChildProfile>();
+
+    public DbSet<ChildProgress> ChildProgress => Set<ChildProgress>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -77,6 +80,22 @@ public sealed class AppDbContext : IdentityDbContext<FamilyMember>
                 .WithMany(f => f.Children)
                 .HasForeignKey(c => c.FamilyId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<ChildProgress>(entity =>
+        {
+            entity.ToTable("child_progress");
+
+            entity.HasKey(c => c.ChildProfileId);
+
+            entity.Property(c => c.ChildProfileId).HasColumnName("child_profile_id").ValueGeneratedNever();
+            entity.Property(c => c.TotalXP).HasColumnName("total_xp").IsRequired();
+            entity.Property(c => c.CurrentLevel).HasColumnName("current_level").IsRequired();
+
+            entity.HasOne<ChildProfile>()
+                .WithOne()
+                .HasForeignKey<ChildProgress>(c => c.ChildProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

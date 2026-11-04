@@ -181,6 +181,7 @@ app.MapSearchEndpoints();
 app.MapAgentEndpoints();
 app.MapAuthEndpoints();
 app.MapFamilyEndpoints();
+app.MapEvaluationEndpoints();
 
 app.Logger.LogInformation("HomeschoolAI API arrancada en el entorno {Environment}", app.Environment.EnvironmentName);
 

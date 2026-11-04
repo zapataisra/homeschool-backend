@@ -10,7 +10,8 @@ using Xunit;
 
 namespace HomeschoolAI.Tests;
 
-public class IdentityIntegrationTests : IClassFixture<IdentityTestContext>
+[Collection(IntegrationCollection.Name)]
+public class IdentityIntegrationTests
 {
     private readonly IdentityTestContext _ctx;
 

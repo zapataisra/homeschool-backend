@@ -157,6 +157,25 @@ namespace HomeschoolAI.Adapters.Migrations
                     b.ToTable("AspNetUsers", "app_identity");
                 });
 
+            modelBuilder.Entity("HomeschoolAI.Domain.Progress.ChildProgress", b =>
+                {
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("child_profile_id");
+
+                    b.Property<int>("CurrentLevel")
+                        .HasColumnType("integer")
+                        .HasColumnName("current_level");
+
+                    b.Property<int>("TotalXP")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_xp");
+
+                    b.HasKey("ChildProfileId");
+
+                    b.ToTable("child_progress", "app_identity");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -309,6 +328,15 @@ namespace HomeschoolAI.Adapters.Migrations
                         .IsRequired();
 
                     b.Navigation("Family");
+                });
+
+            modelBuilder.Entity("HomeschoolAI.Domain.Progress.ChildProgress", b =>
+                {
+                    b.HasOne("HomeschoolAI.Adapters.Identity.ChildProfile", null)
+                        .WithOne()
+                        .HasForeignKey("HomeschoolAI.Domain.Progress.ChildProgress", "ChildProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

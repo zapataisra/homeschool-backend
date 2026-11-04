@@ -2,8 +2,11 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
 using HomeschoolAI.Adapters.Identity;
+using HomeschoolAI.Domain.Conversation;
 using Xunit;
 
 namespace HomeschoolAI.Tests;
@@ -93,8 +96,20 @@ public sealed class IdentityTestContext : IAsyncLifetime
 /// </summary>
 public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
 {
+    private const string EvaluationJson =
+        "{\"precision\":100,\"confidence\":0.9,\"missingConcepts\":[]," +
+        "\"extractedOperation\":{\"operand1\":5,\"operation\":\"+\",\"operand2\":3,\"proposedResult\":8}," +
+        "\"sourceChunkIds\":[1]}";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+
+        // Reemplaza el LLM real por un fake para no consumir tokens en las pruebas.
+        builder.ConfigureServices(services =>
+        {
+            services.RemoveAll<IAgentCompletionService>();
+            services.AddSingleton<IAgentCompletionService>(new FakeAgentCompletionService { Reply = EvaluationJson });
+        });
     }
 }

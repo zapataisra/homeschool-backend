@@ -19,6 +19,9 @@ public static class AuthorizationPolicies
     /// <summary>Sesión delegada del niño.</summary>
     public const string RequireChild = "RequireChild";
 
+    /// <summary>Evaluación de respuestas: sesión del niño o adulto Guardian.</summary>
+    public const string RequireChildOrGuardian = "RequireChildOrGuardian";
+
     public static IServiceCollection AddHomeschoolAuthorization(this IServiceCollection services)
     {
         services.AddAuthorization(options =>
@@ -37,6 +40,11 @@ public static class AuthorizationPolicies
                 policy.RequireAuthenticatedUser()
                     .RequireClaim(ClaimNames.Role, nameof(UserRole.Child))
                     .RequireClaim(ClaimNames.ChildProfileId));
+
+            options.AddPolicy(RequireChildOrGuardian, policy =>
+                policy.RequireAuthenticatedUser()
+                    .RequireClaim(ClaimNames.FamilyId)
+                    .RequireClaim(ClaimNames.Role, nameof(UserRole.Child), nameof(UserRole.Guardian)));
         });
 
         return services;
