@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using HomeschoolAI.Adapters.Identity;
 using HomeschoolAI.Application.Evaluation;
+using HomeschoolAI.Application.Ports;
+using HomeschoolAI.Domain.Auth;
 
 namespace HomeschoolAI.Api.Endpoints;
 
@@ -15,6 +17,8 @@ public static class EvaluationEndpoints
         endpoints.MapPost("/api/evaluation/evaluate", async (
                 EvaluateRequest request,
                 CriticalEvaluationService evaluationService,
+                IProgressService progressService,
+                IUserContextProvider userContextProvider,
                 CancellationToken cancellationToken) =>
             {
                 var text = request.Text?.Trim() ?? string.Empty;
@@ -30,6 +34,19 @@ public static class EvaluationEndpoints
                 }
 
                 var result = await evaluationService.EvaluateAsync(text, request.Attempt, DefaultBaseXp, cancellationToken);
+
+                // Solo el niño acumula XP (el Guardian evalúa pero no gana). El ChildProfileId
+                // se obtiene del claim de la cookie autenticada, nunca del cuerpo de la petición
+                // (protección IDOR: no se puede evaluar ni sumar XP al perfil de otra familia).
+                if (result.MathIsCorrect)
+                {
+                    var user = await userContextProvider.GetAsync(cancellationToken);
+                    if (user?.ChildProfileId is { } childProfileId)
+                    {
+                        await progressService.AddXpAsync(childProfileId, result.XpAwarded, cancellationToken);
+                    }
+                }
+
                 return Results.Ok(result);
             })
             .WithName("Evaluate")

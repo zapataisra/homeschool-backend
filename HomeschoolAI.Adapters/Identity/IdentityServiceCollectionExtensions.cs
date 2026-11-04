@@ -80,6 +80,7 @@ public static class IdentityServiceCollectionExtensions
         // Servicios de autenticación y de familia (aislamiento por FamilyId).
         services.AddScoped<IAuthService, IdentityAuthService>();
         services.AddScoped<IFamilyService, IdentityFamilyService>();
+        services.AddScoped<IProgressService, ProgressService>();
 
         // Políticas de autorización por rol (Owner, Guardian, Child).
         services.AddHomeschoolAuthorization();

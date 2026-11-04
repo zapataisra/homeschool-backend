@@ -2,8 +2,12 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using HomeschoolAI.Adapters.Identity;
 using HomeschoolAI.Application.Auth;
 using HomeschoolAI.Application.Evaluation;
+using HomeschoolAI.Domain.Progress;
 using Xunit;
 
 namespace HomeschoolAI.Tests;
@@ -78,5 +82,49 @@ public class EvaluationEndpointTests
         Assert.NotNull(result.Evaluation);
         Assert.Equal(100, result.Evaluation!.Precision);
         Assert.Equal(0.9, result.Evaluation.Confidence);
+    }
+
+    [Fact]
+    public async Task Child_accumulates_xp_and_levels_up_after_successful_evaluations()
+    {
+        using var client = _ctx.CreateClient();
+
+        var register = await client.PostAsync("/api/auth/register", Json(new
+        {
+            email = $"owner_{Guid.NewGuid():N}@test.com",
+            password = "Password1!",
+            familyName = "Familia Progreso"
+        }));
+        Assert.Equal(HttpStatusCode.OK, register.StatusCode);
+
+        var createChild = await client.PostAsync("/api/family/children", Json(new { name = "Niño", grade = 3 }));
+        Assert.Equal(HttpStatusCode.OK, createChild.StatusCode);
+        var child = await createChild.Content.ReadFromJsonAsync<ChildProfileDto>();
+
+        var session = await client.PostAsync($"/api/family/children/{child!.Id}/session", null);
+        Assert.Equal(HttpStatusCode.OK, session.StatusCode);
+
+        // 1ª evaluación correcta: +100 XP → TotalXP=100, nivel 2 (100/100 + 1).
+        var first = await client.PostAsync("/api/evaluation/evaluate", Json(new { text = "5 más 3 es 8", attempt = 1 }));
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+
+        var afterFirst = await GetProgressAsync(child.Id);
+        Assert.Equal(100, afterFirst.TotalXP);
+        Assert.Equal(2, afterFirst.CurrentLevel);
+
+        // 2ª evaluación correcta: +100 XP → TotalXP=200, nivel 3 (200/100 + 1).
+        var second = await client.PostAsync("/api/evaluation/evaluate", Json(new { text = "5 más 3 es 8", attempt = 1 }));
+        Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+
+        var afterSecond = await GetProgressAsync(child.Id);
+        Assert.Equal(200, afterSecond.TotalXP);
+        Assert.Equal(3, afterSecond.CurrentLevel);
+    }
+
+    private async Task<ChildProgress> GetProgressAsync(Guid childProfileId)
+    {
+        using var scope = _ctx.Factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        return await db.ChildProgress.SingleAsync(c => c.ChildProfileId == childProfileId);
     }
 }
