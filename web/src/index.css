@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-arena text-ink font-body antialiased;
+  }
+}
+
+@layer components {
+  /* Contenedor "sticker/juguete": bordes muy redondeados, trazo cartoon grueso,
+     halo blanco y sombra sólida desplazada (combinación estricta de FRONTEND.md). */
+  .sticker {
+    @apply rounded-blob border-4 border-ink bg-[#F5EEDB] shadow-solid ring-8 ring-white;
+  }
+
+  /* Botón táctil: padding grueso; al :active se hunde (translación + sombra reducida). */
+  .btn-toy {
+    @apply rounded-2xl border-4 border-ink px-6 py-3 font-heading text-lg font-extrabold shadow-solid
+      transition-all duration-100 active:translate-x-[6px] active:translate-y-[8px] active:shadow-none
+      disabled:pointer-events-none disabled:opacity-50;
+  }
+}

@@ -98,7 +98,9 @@ public class PaymentWebhookTests
         using var client = _ctx.CreateClient();
         var familyId = await RegisterFamilyAsync(client);
 
-        const string eventId = "evt_test_duplicate_123";
+        // Id único por ejecución: la base de pruebas persiste entre corridas, así que un
+        // id fijo contaminaría la siguiente ejecución (idempotencia real).
+        var eventId = $"evt_test_duplicate_{Guid.NewGuid():N}";
         var payload = BuildCheckoutCompletedPayload(familyId, eventId);
         var signature = EventUtility.GenerateSignatureHeader(payload, IdentityTestContext.TestStripeWebhookSecret);
 

@@ -62,6 +62,22 @@ services:
     depends_on:
       - db
 
+  web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile.dev
+    container_name: homeschool_web
+    restart: unless-stopped
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "127.0.0.1:5173:5173"
+    volumes:
+      - ../web:/app
+      - /app/node_modules
+    depends_on:
+      - api
+
   api-prod:
     build:
       context: ..

@@ -8,6 +8,7 @@ using Serilog.Formatting.Compact;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.OpenApi.Models;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using HomeschoolAI.Adapters.Embedding;
@@ -64,6 +65,18 @@ builder.Services.AddOpenTelemetry()
         .AddSource(ApplicationTelemetry.SourceName)
         .AddAspNetCoreInstrumentation()
         .AddConsoleExporter());
+
+// Swagger/OpenAPI: expone el documento en /swagger/v1/swagger.json (solo en Development).
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "HomeschoolAI API",
+        Version = "v1",
+        Description = "API de LUMI: RAG sobre los Programas Sintéticos de la SEP, identidad, evaluación y pagos."
+    });
+});
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
@@ -164,6 +177,17 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
+// Anti-CSRF: prepara la emisión de un token mediante cookie HttpOnly para las
+// futuras peticiones de mutación del frontend (la validación se activa luego).
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.Name = "homeschool-csrf";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+});
+
 var app = builder.Build();
 
 // Middlewares: correlación → registro de petición → manejo de errores.
@@ -182,6 +206,13 @@ if (!app.Environment.IsEnvironment("Testing"))
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Swagger UI solo en Development (OWASP: no exponer la documentación en producción).
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
 app.MapGet("/", () => "HomeschoolAI API");
 app.MapSearchEndpoints();
 app.MapAgentEndpoints();
@@ -189,6 +220,7 @@ app.MapAuthEndpoints();
 app.MapFamilyEndpoints();
 app.MapEvaluationEndpoints();
 app.MapPaymentEndpoints();
+app.MapSecurityEndpoints();
 
 app.Logger.LogInformation("HomeschoolAI API arrancada en el entorno {Environment}", app.Environment.EnvironmentName);
 

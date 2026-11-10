@@ -1,10 +1,14 @@
 # HomeschoolAI: reglas de arquitectura, reutilización y seguridad
 
 Estas reglas son obligatorias. Si una petición las contradice, DETENTE y pregunta antes de escribir código. Si dudas de un nombre de paquete, API, versión o configuración, verifícalo en la documentación oficial; no lo inventes.
-## 0. FUENTE DE VERDAD DEL PRODUCTO (LECTURA OBLIGATORIA)
-Antes de proponer, escribir o modificar cualquier código, DEBES leer el diseño de producto y negocio en:
-1. `docs/ai/CONTRATO.md` (Objetivo, gamificación, Kanban RPG, sesión Feynman, agentes).
-2. `docs/ai/DISENO_ACCESO_PAGOS.md` (Identidad, roles Owner/Guardian/Child, sesión delegada, aislamiento).
+
+## 0. FUENTE DE VERDAD (CARGA PEREZOSA DE CONTEXTO)
+La lógica core (Kanban RPG, evaluación Feynman, aislamiento de roles) vive en `docs/ai/CONTRATO.md` y `docs/ai/DISENO_ACCESO_PAGOS.md`.
+**ATENCIÓN: NO LEAS estos archivos en cada iteración.**
+Léelos ÚNICAMENTE si la tarea requiere:
+1. Modificar reglas de negocio (cálculo de XP, flujos de nivel).
+2. Alterar la capa de Autorización, Roles (Owner/Child) o Pagos (Stripe).
+Para tareas de diseño, UI/Frontend, CSS o refactorizaciones menores, IGNORA esos documentos por completo para ahorrar tokens.
 Nunca propongas flujos que contradigan la lógica de negocio de estos documentos. Si una petición del usuario los viola, adviértelo antes de proceder.
 
 ## 1. Visión general
@@ -185,3 +189,20 @@ Una tarea está terminada solo si:
 - Identidad: sesión por cookie o por tokens; aislamiento por familia con filtros de EF Core, con o sin Row-Level Security.
 - Esquema y `DbContext` separados para identidad y pagos (ver sección 8, punto 2).
 - Destino de los logs en producción: salida estándar, archivo, un visor local o OpenTelemetry. Hoy: consola en JSON.
+
+## 11.FRONTEND Y DISEÑO UI (PWA - React) (carpeta web/)
+
+- **OBLIGATORIO:** Si vas a modificar, crear o debugear código dentro de la carpeta `web/`, debes leer primero `docs/ai/FRONTEND.md` para aplicar las reglas de arquitectura y el CSS estricto. Resumen obligatorio:
+
+React + Vite + TypeScript estricto. Todo el frontend vive en web/. No toques el backend, app/adapters/, vectordb/ ni data/ sin preguntar; si el frontend necesita un cambio en la API, descríbelo y espera mi aprobación.
+Los tipos de la API se GENERAN desde OpenAPI (nunca se copian a mano) y hay UN solo cliente de API compartido.
+Ningún secreto en el cliente (nada sensible en variables VITE_*), ningún token en localStorage ni sessionStorage, y jamás dangerouslySetInnerHTML: el texto del LLM se renderiza como texto.
+El service worker nunca cachea respuestas autenticadas de la API ni datos de la niña (voz, fotos, transcripciones, mensajes).
+Sin analíticas, scripts, fuentes ni recursos de terceros en tiempo de ejecución.
+La niña nunca ve notas numéricas ni errores técnicos; los fallos se muestran con el tono de LUMI.
+Terminado = tsc sin errores, lint sin advertencias, pruebas en verde, npm run build correcto y npm audit revisado.
+
+Ajustes a otras secciones: en la sección 8 punto 1, web/ queda excluida de la prohibición cuando la tarea es de frontend. .gitignore debe incluir node_modules/, dist/ y web/.env*.local.
+
+
+

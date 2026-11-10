@@ -1,0 +1,38 @@
+# Archivos que Cline NO debe leer. Menos ruido en el contexto y, sobre todo, menos fugas hacia el proveedor del modelo.
+# Sintaxis tipo .gitignore (verifica en la documentación de tu versión de Cline).
+
+# Secretos: nunca deben viajar al proveedor del modelo
+.env
+.env.*
+!.env.example
+
+# Dependencias y compilados
+node_modules/
+bin/
+obj/
+dist/
+venv/
+.venv/
+__pycache__/
+
+# Datos pesados y binarios
+data/
+chroma_data/
+models/
+logs/
+*.pdf
+*.onnx
+*.zip
+*.log
+*.png
+*.jpg
+*.jpeg
+*.webp
+!docs/ai/bocetos/*.png
+
+# Archivos de bloqueo (enormes y sin valor para el agente)
+package-lock.json
+*.lock
+
+# Registros de trabajo largos
+HomeschoolAI*Documento*
