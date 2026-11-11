@@ -45,13 +45,29 @@ Se aplican a todo lo que esté en `web/`. Complementan `.clinerules` (arquitectu
 - El service worker solo precachea el cascarón estático (HTML, JS, CSS, fuentes e imágenes propias). NO cachea rutas `/api`, ni respuestas con cookies de sesión, ni contenido generado para la niña.
 - Instalación y service worker exigen contexto seguro: `localhost` sirve en tu máquina; para probar en otro dispositivo se necesita HTTPS local.
 - Las actualizaciones se avisan con claridad y no interrumpen una actividad en curso.
+## 6. PRINCIPIOS DE UI/UX (OBLIGATORIOS)
+- **Diseño Responsive Real:** La app debe adaptarse a móvil, tablet y escritorio usando utilidades de Tailwind (`md:`, `lg:`). Prohibido simplemente encoger la versión desktop.
+- **Jerarquía Visual:** Interfaz escaneable. Destaca siempre la acción principal (CTA). **Cero texto innecesario o de relleno generado por IA**; mantén el copy directo y limpio.
+- **Tokens y Consistencia:** Usa estrictamente los colores (`arena`, `ink`, `quetzal`, etc.), sombras y fuentes de `tailwind.config.js`. Todos los componentes (botones, modales, cards) deben compartir el mismo lenguaje visual.
+- **Accesibilidad (a11y):** Toda imagen requiere `alt` descriptivo. Todo botón/icono sin texto requiere `aria-label`. Mantén alto contraste.
 
-## 6. Producto y experiencia
+## 7. ESTADOS DE LA INTERFAZ E INTERACCIÓN
+- **Estados de Interacción:** Todo elemento interactivo (botones, enlaces, inputs) DEBE incluir diseño para sus estados `:hover`, `:focus` (ej. `focus:ring`), `:active` (hundimiento físico) y `:disabled` (opacidad reducida, cursor not-allowed).
+- **Estados de Carga (Skeletons):** **PROHIBIDO usar spinners genéricos o dejar espacios en blanco.** Usa siempre "Skeleton Loaders" (cajas con `animate-pulse` y color `bg-arena/50`) para indicar que el contenido está cargando.
+- **Estados de Borde (Edge Cases):** Nunca diseñes solo el estado inicial o el "happy path". Debes prever y diseñar:
+  1. *Empty States* (¿Qué pasa si no hay datos?).
+  2. *Error States* (¿Cómo se ve cuando algo falla?).
+  3. *Success States* (Retroalimentación al completar una acción).
 
-"Mesoamérica Kawaii" (REGLA ESTRICTA)
-La interfaz usa un diseño "Sticker / Juguete" inspirado en Chiikawa y la cultura azteca.
+
+## 8. ESTILO VISUAL: "Mesoamérica Kawaii"
+- **Diseño General:** "Sticker / Juguete" (Chiikawa + Azteca).
+- **Tarjetas y Contenedores Principales (Efecto Sticker):**
+  Combinación estricta: `bg-arena border-4 border-ink rounded-blob shadow-solid ring-4 ring-white`.
+- **Botones CTA:** Al hacer `:active`, deben trasladarse (`translate-x-[4px] translate-y-[6px]`) y perder la sombra (`shadow-none`) simulando un bloque de gomita presionado.
+
 - **Paleta de Colores:** 
-  - Fondo: Arena/crema (`#FFF9E6` o `#F5EEDB`).
+  - **Fondo de Pantalla:** SIEMPRE blanco puro (`bg-white`).
   - Ink (Trazos/Textos): Marrón oscuro cálido (`#3E2723`). **NUNCA usar negro puro**.
   - Acentos: Verde Quetzal (`emerald-400`), Rosa Ajolote (`rose-300`), Azul Tláloc (`sky-400`), Amarillo Elote (`amber-300`).
 - **Anatomía de Componentes (Efecto Sticker):** Todos los contenedores principales (tarjetas, modales) deben llevar esta combinación estricta de Tailwind:

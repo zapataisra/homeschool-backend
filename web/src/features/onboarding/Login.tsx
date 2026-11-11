@@ -1,14 +1,38 @@
 import { useState, type FormEvent, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../shared/contexts/AuthContext";
 
 type AuthMode = "login" | "register";
 
 export default function Login() {
   const [mode, setMode] = useState<AuthMode>("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [familyName, setFamilyName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const isLogin = mode === "login";
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    // La conexión con POST /api/auth/login|register llega en una tarea posterior.
+  const { login, register } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    const result = isLogin
+      ? await login(email, password)
+      : await register(email, password, familyName);
+
+    setLoading(false);
+
+    if (!result.success) {
+      setError(result.message ?? "Ocurrió un error. Intenta de nuevo.");
+      return;
+    }
+
+    navigate("/profile-select");
   };
 
   return (
@@ -40,7 +64,7 @@ export default function Login() {
           </div>
 
           {/* Tarjeta sticker */}
-          <div className="bg-[#F5EEDB] border-4 border-[#3E2723] rounded-[1.5rem] shadow-[4px_6px_0px_#3E2723] ring-4 ring-white p-4">
+          <div className="bg-[#F5EEDB] border-4 border-[#3E2723] rounded-[1.5rem] shadow-[4px_6px_0px_#611232] ring-4 ring-white p-4">
             <div role="tablist" aria-label="Modo de acceso" className="mb-3 flex rounded-full border-2 border-[#3E2723] bg-white p-1">
               <AuthTab active={isLogin} onClick={() => setMode("login")}>Entrar</AuthTab>
               <AuthTab active={!isLogin} onClick={() => setMode("register")}>Crear</AuthTab>
@@ -50,10 +74,33 @@ export default function Login() {
               {isLogin ? "¡Hola de nuevo!" : "¡Crea tu cuenta!"}
             </h1>
             <p className="mb-3 text-center font-body text-[10px] leading-tight text-[#3E2723]/70">
-              {isLogin ? "Nos alegra verte de nuevo." : "Únete a la aventura LUMI."}
+              {isLogin ? "Nos alegra verte de nuevo." : "Únete a la aventura de aprendizaje."}
             </p>
 
+            {error && (
+              <div role="alert" className="mb-4 rounded-xl border-2 border-red-200 bg-red-50 p-3 text-sm font-body text-red-800">
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit}>
+              {!isLogin && (
+                <div className="mb-2">
+                  <label htmlFor="familyName" className="mb-0.5 block font-heading text-xs font-bold text-[#3E2723]">Familia</label>
+                  <input
+                    id="familyName"
+                    name="familyName"
+                    type="text"
+                    required
+                    autoComplete="organization"
+                    value={familyName}
+                    onChange={(event) => setFamilyName(event.target.value)}
+                    placeholder="Nombre de la familia"
+                    className="w-full rounded-xl border-2 border-[#3E2723] bg-white px-3 py-1.5 font-body text-sm text-[#3E2723] placeholder-[#3E2723]/50 outline-none focus:ring-4 focus:ring-quetzal"
+                  />
+                </div>
+              )}
+
               <div className="mb-2">
                 <label htmlFor="email" className="mb-0.5 block font-heading text-xs font-bold text-[#3E2723]">Correo</label>
                 <input
@@ -62,6 +109,8 @@ export default function Login() {
                   type="email"
                   required
                   autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   placeholder="correo@ejemplo.com"
                   className="w-full rounded-xl border-2 border-[#3E2723] bg-white px-3 py-1.5 font-body text-sm text-[#3E2723] placeholder-[#3E2723]/50 outline-none focus:ring-4 focus:ring-quetzal"
                 />
@@ -75,6 +124,8 @@ export default function Login() {
                   type="password"
                   required
                   autoComplete={isLogin ? "current-password" : "new-password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   placeholder="••••••••"
                   className="w-full rounded-xl border-2 border-[#3E2723] bg-white px-3 py-1.5 font-body text-sm text-[#3E2723] placeholder-[#3E2723]/50 outline-none focus:ring-4 focus:ring-quetzal"
                 />
@@ -82,9 +133,11 @@ export default function Login() {
 
               <button
                 type="submit"
-                className="mt-1 w-full rounded-xl border-2 border-[#3E2723] bg-quetzal px-4 py-1.5 font-heading text-sm font-extrabold text-[#3E2723] shadow-[4px_6px_0px_#3E2723] transition-all duration-100 hover:brightness-105 active:translate-x-[4px] active:translate-y-[6px] active:shadow-none"
+                disabled={loading}
+                aria-label={isLogin ? "Iniciar sesión" : "Crear cuenta"}
+                className="mt-1 w-full rounded-xl border-2 border-[#3E2723] bg-quetzal px-4 py-1.5 font-heading text-sm font-extrabold text-[#3E2723] shadow-[4px_6px_0px_#611232] transition-all duration-100 hover:brightness-105 active:translate-x-[4px] active:translate-y-[6px] active:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isLogin ? "Entrar" : "Crear cuenta"}
+                {loading ? "Cargando..." : isLogin ? "Entrar" : "Crear cuenta"}
               </button>
             </form>
           </div>

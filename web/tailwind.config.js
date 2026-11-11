@@ -30,8 +30,8 @@ export default {
       },
       boxShadow: {
         // Sombra "Solid Offset": plana, dura y desplazada abajo-derecha (FRONTEND.md).
-        solid: "6px 8px 0px #3E2723",
-        "solid-sm": "2px 3px 0px #3E2723",
+        solid: "6px 8px 0px #611232",
+        "solid-sm": "2px 3px 0px #611232",
       },
       keyframes: {
         // "Breathing/floating": traslación suave en Y en bucle de 3.5s.
