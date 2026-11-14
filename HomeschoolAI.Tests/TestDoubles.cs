@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Pgvector;
+using HomeschoolAI.Application.Dtos;
+using HomeschoolAI.Application.Learning;
 using HomeschoolAI.Application.Ports;
+using HomeschoolAI.Application.Search;
 using HomeschoolAI.Domain.Auth;
 using HomeschoolAI.Domain.Conversation;
 using HomeschoolAI.Domain.Embedding;
@@ -94,6 +97,25 @@ public sealed class FakeInteractionQuotaService : IInteractionQuotaService
         ConsumedCalls++;
         return Task.CompletedTask;
     }
+}
+
+public sealed class FakeSearchService : ISearchService
+{
+    private readonly IReadOnlyList<SearchChunkDto> _results;
+
+    public FakeSearchService(IReadOnlyList<SearchChunkDto>? results = null) => _results = results ?? Array.Empty<SearchChunkDto>();
+
+    public Task<IReadOnlyList<SearchChunkDto>> SearchAsync(SearchQuery query, CancellationToken cancellationToken = default)
+        => Task.FromResult(_results);
+}
+
+public sealed class FakeChildLearningRepository : IChildLearningRepository
+{
+    public Task<LearningSnapshot> GetOrCreateActiveLessonAsync(Guid childProfileId, Guid familyId, DateTime nowUtc, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException("No se usa en las pruebas de ChatService.");
+
+    public Task RecordActivityAsync(Guid childProfileId, Guid familyId, DateTime nowUtc, CancellationToken cancellationToken = default)
+        => Task.CompletedTask;
 }
 
 public sealed class InMemoryLogSink : ILoggerProvider

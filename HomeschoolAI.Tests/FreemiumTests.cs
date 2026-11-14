@@ -33,6 +33,17 @@ public class FreemiumTests
         return auth!.FamilyId;
     }
 
+    private async Task StartChildSessionAsync(HttpClient client)
+    {
+        var createChild = await client.PostAsync("/api/family/children", Json(new { name = "Niño", grade = 3 }));
+        Assert.Equal(HttpStatusCode.OK, createChild.StatusCode);
+        var child = await createChild.Content.ReadFromJsonAsync<ChildProfileDto>();
+        Assert.NotNull(child);
+
+        var session = await client.PostAsync($"/api/family/children/{child!.Id}/session", null);
+        Assert.Equal(HttpStatusCode.OK, session.StatusCode);
+    }
+
     private async Task SetFreeInteractionsAsync(Guid familyId, int value)
     {
         using var scope = _ctx.Factory.Services.CreateScope();
@@ -92,8 +103,9 @@ public class FreemiumTests
         var familyId = await RegisterFamilyAsync(client);
 
         await SetFreeInteractionsAsync(familyId, 0);
+        await StartChildSessionAsync(client);
 
-        var response = await client.PostAsync("/api/agent/chat", Json(new { message = "Hola LUMI" }));
+        var response = await client.PostAsync("/api/agent/chat", Json(new { message = "Hola Axolotl" }));
 
         Assert.Equal(HttpStatusCode.PaymentRequired, response.StatusCode);
     }
@@ -114,7 +126,9 @@ public class FreemiumTests
             await db.SaveChangesAsync();
         }
 
-        var response = await client.PostAsync("/api/agent/chat", Json(new { message = "Hola LUMI" }));
+        await StartChildSessionAsync(client);
+
+        var response = await client.PostAsync("/api/agent/chat", Json(new { message = "Hola Axolotl" }));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }

@@ -49,7 +49,7 @@ public sealed class IdentityFamilyService : IFamilyService
             .AsNoTracking()
             .Where(c => c.FamilyId == user.FamilyId)
             .OrderBy(c => c.Name)
-            .Select(c => new ChildProfileDto(c.Id, c.Name, c.Grade, c.Fase))
+            .Select(c => new ChildProfileDto(c.Id, c.Name, c.Grade, c.Fase, c.AvatarUrl))
             .ToListAsync(cancellationToken);
     }
 
@@ -75,13 +75,14 @@ public sealed class IdentityFamilyService : IFamilyService
             Name = name,
             Grade = request.Grade,
             Fase = request.Fase,
+            AvatarUrl = string.IsNullOrWhiteSpace(request.AvatarUrl) ? "avatar-aguila.svg" : request.AvatarUrl.Trim(),
             CreatedAtUtc = DateTimeOffset.UtcNow
         };
 
         _db.ChildProfiles.Add(child);
         await _db.SaveChangesAsync(cancellationToken);
 
-        return new ChildProfileDto(child.Id, child.Name, child.Grade, child.Fase);
+        return new ChildProfileDto(child.Id, child.Name, child.Grade, child.Fase, child.AvatarUrl);
     }
 
     public async Task<ChildProfileDto> GetCurrentChildAsync(CancellationToken cancellationToken = default)
@@ -98,7 +99,7 @@ public sealed class IdentityFamilyService : IFamilyService
             .SingleOrDefaultAsync(c => c.Id == user.ChildProfileId.Value && c.FamilyId == user.FamilyId, cancellationToken)
             ?? throw new ResourceNotFoundException("ChildProfile");
 
-        return new ChildProfileDto(child.Id, child.Name, child.Grade, child.Fase);
+        return new ChildProfileDto(child.Id, child.Name, child.Grade, child.Fase, child.AvatarUrl);
     }
 
     public async Task<BillingResponse> GetBillingAsync(CancellationToken cancellationToken = default)

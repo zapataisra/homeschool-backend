@@ -30,6 +30,14 @@ namespace HomeschoolAI.Adapters.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("AvatarUrl")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasDefaultValue("avatar-aguila.svg")
+                        .HasColumnName("avatar_url");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
@@ -225,6 +233,78 @@ namespace HomeschoolAI.Adapters.Migrations
                     b.ToTable("child_progress", "app_identity");
                 });
 
+            modelBuilder.Entity("HomeschoolAI.Domain.Progress.ChildTopicProgress", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Attempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("attempts");
+
+                    b.Property<string>("BadgeEarned")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("badge_earned");
+
+                    b.Property<string>("CampoFormativo")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("campo_formativo");
+
+                    b.Property<Guid>("ChildProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("child_profile_id");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at_utc");
+
+                    b.Property<DateTime>("LastActivityAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_activity_at_utc");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("TimeSpentSeconds")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("time_spent_seconds");
+
+                    b.Property<string>("TopicId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("topic_id");
+
+                    b.Property<string>("TopicTitle")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("topic_title");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChildProfileId", "TopicId")
+                        .IsUnique();
+
+                    b.ToTable("child_topic_progress", "app_identity");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -384,6 +464,15 @@ namespace HomeschoolAI.Adapters.Migrations
                     b.HasOne("HomeschoolAI.Adapters.Identity.ChildProfile", null)
                         .WithOne()
                         .HasForeignKey("HomeschoolAI.Domain.Progress.ChildProgress", "ChildProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HomeschoolAI.Domain.Progress.ChildTopicProgress", b =>
+                {
+                    b.HasOne("HomeschoolAI.Adapters.Identity.ChildProfile", null)
+                        .WithMany()
+                        .HasForeignKey("ChildProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

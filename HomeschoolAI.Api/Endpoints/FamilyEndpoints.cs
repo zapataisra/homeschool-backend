@@ -20,6 +20,7 @@ public static class FamilyEndpoints
         endpoints.MapGet("/api/family/children", async (IFamilyService service, CancellationToken cancellationToken) =>
                 Results.Ok(await service.GetChildrenAsync(cancellationToken)))
             .RequireAuthorization(AuthorizationPolicies.RequireFamilyMember)
+            .Produces<IReadOnlyList<ChildProfileDto>>(StatusCodes.Status200OK)
             .WithName("GetChildren");
 
         endpoints.MapPost("/api/family/children", async (

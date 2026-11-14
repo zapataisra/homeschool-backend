@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { apiClient } from "../api/apiClient";
+import { fetchCsrfToken, readStringProperty } from "../api/http";
 import { logger } from "../utils/logger";
 
 export type AuthResult = { success: boolean; message?: string };
@@ -19,14 +20,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string): Promise<AuthResult> => {
     try {
       const token = await fetchCsrfToken();
-      const { response } = await apiClient.POST("/api/auth/login", {
+      const { response, error } = await apiClient.POST("/api/auth/login", {
         body: { email, password },
         headers: token ? { "X-CSRF-TOKEN": token } : undefined,
       });
 
       if (!response.ok) {
         logger.error(`Login fallido (${response.status})`);
-        return { success: false, message: await readProblemTitle(response, "Credenciales inválidas.") };
+        return { success: false, message: readProblemTitle(error, "Credenciales inválidas.") };
       }
 
       setIsAuthenticated(true);
@@ -41,14 +42,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (email: string, password: string, familyName: string): Promise<AuthResult> => {
       try {
         const token = await fetchCsrfToken();
-        const { response } = await apiClient.POST("/api/auth/register", {
+        const { response, error } = await apiClient.POST("/api/auth/register", {
           body: { email, password, familyName },
           headers: token ? { "X-CSRF-TOKEN": token } : undefined,
         });
 
         if (!response.ok) {
           logger.error(`Registro fallido (${response.status})`);
-          return { success: false, message: await readProblemTitle(response, "No se pudo crear la cuenta.") };
+          return { success: false, message: readProblemTitle(error, "No se pudo crear la cuenta.") };
         }
 
         setIsAuthenticated(true);
@@ -88,32 +89,7 @@ export function useAuth(): AuthContextValue {
   return context;
 }
 
-async function fetchCsrfToken(): Promise<string | null> {
-  try {
-    const { response } = await apiClient.GET("/api/antiforgery/token");
-    if (!response.ok) return null;
-    return readStringProperty(await readJsonBody(response), "token");
-  } catch {
-    logger.warn("No se pudo obtener el token anti-CSRF");
-    return null;
-  }
-}
-
-async function readProblemTitle(response: Response, fallback: string): Promise<string> {
-  const title = readStringProperty(await readJsonBody(response), "title");
+function readProblemTitle(error: unknown, fallback: string): string {
+  const title = readStringProperty(error, "title");
   return title && title.length > 0 ? title : fallback;
-}
-
-async function readJsonBody(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
-
-function readStringProperty(value: unknown, key: string): string | null {
-  if (typeof value !== "object" || value === null) return null;
-  const candidate = (value as Record<string, unknown>)[key];
-  return typeof candidate === "string" ? candidate : null;
 }

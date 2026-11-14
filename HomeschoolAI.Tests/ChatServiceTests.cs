@@ -17,7 +17,7 @@ public class ChatServiceTests
         FakeAgentCompletionService completion,
         string userId,
         ILogger<ChatService> logger) =>
-        new(store, completion, new FakeUserContextProvider(new UserContext(userId, Guid.NewGuid(), UserRole.Owner)), new FakeInteractionQuotaService(), logger);
+        new(store, completion, new FakeUserContextProvider(new UserContext(userId, Guid.NewGuid(), UserRole.Owner)), new FakeInteractionQuotaService(), new FakeChildLearningRepository(), new FakeSearchService(), logger);
 
     [Fact]
     public async Task Chat_generates_thread_id_and_persists_user_and_assistant_turns()
@@ -124,7 +124,7 @@ public class ChatServiceTests
     }
 
     [Fact]
-    public async Task Chat_passes_lumi_system_prompt_to_the_completion_service()
+    public async Task Chat_passes_axolotl_system_prompt_to_the_completion_service()
     {
         var store = new FakeConversationStore();
         var completion = new FakeAgentCompletionService { Reply = "respuesta" };
@@ -133,6 +133,6 @@ public class ChatServiceTests
         await service.SendAsync(new ChatRequest { Message = "hola" });
 
         Assert.NotNull(completion.LastSystemPrompt);
-        Assert.Contains("LUMI", completion.LastSystemPrompt);
+        Assert.Contains("Axolotl", completion.LastSystemPrompt);
     }
 }

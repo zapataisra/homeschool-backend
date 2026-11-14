@@ -19,6 +19,9 @@ public sealed class ChildProfile
     /// <summary>Fase SEP correspondiente (3, 4 o 5); puede derivarse del grado.</summary>
     public int? Fase { get; set; }
 
+    /// <summary>Nombre del archivo de avatar del niño (p. ej. "avatar-aguila.svg").</summary>
+    public string AvatarUrl { get; set; } = "avatar-aguila.svg";
+
     public DateTimeOffset CreatedAtUtc { get; set; }
 
     public Family? Family { get; set; }

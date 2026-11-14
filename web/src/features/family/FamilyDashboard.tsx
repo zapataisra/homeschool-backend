@@ -1,7 +1,14 @@
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../shared/contexts/AuthContext";
 
 export default function FamilyDashboard() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen w-full relative bg-white overflow-hidden flex flex-col items-center justify-center">
@@ -16,7 +23,7 @@ export default function FamilyDashboard() {
             <h1 className="font-heading text-2xl font-extrabold text-ink md:text-3xl">Panel Familiar</h1>
             <button
               type="button"
-              onClick={() => navigate("/login")}
+              onClick={() => void handleLogout()}
               className="rounded-xl border-2 border-ink bg-white px-4 py-2 font-heading text-sm font-bold text-ink transition-all hover:brightness-95 focus:outline-none focus:ring-4 focus:ring-quetzal active:translate-y-1"
             >
               Cerrar sesión

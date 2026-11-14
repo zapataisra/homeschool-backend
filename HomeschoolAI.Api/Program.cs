@@ -7,10 +7,9 @@ using Serilog.Events;
 using Serilog.Formatting.Compact;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi.Models;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
 using HomeschoolAI.Adapters.Embedding;
 using HomeschoolAI.Adapters.Email;
 using HomeschoolAI.Adapters.Identity;
@@ -74,7 +73,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "HomeschoolAI API",
         Version = "v1",
-        Description = "API de LUMI: RAG sobre los Programas Sintéticos de la SEP, identidad, evaluación y pagos."
+        Description = "API de la plataforma Escuela en casa MX: RAG sobre los Programas Sintéticos de la SEP, identidad, evaluación y pagos."
     });
 });
 
@@ -106,6 +105,17 @@ builder.Services.AddDbContext<HomeschoolDbContext>(options =>
 // Identidad y accesos: contexto de escritura en el esquema `app_identity`.
 // Usa IdentityConnection (escritura/DDL); DefaultConnection (solo lectura) queda para el RAG.
 builder.Services.AddHomeschoolIdentity(identityConnectionString);
+
+// Persistencia de claves de DataProtection: con `dotnet watch` (hot reload) las claves
+// son efímeras por defecto y cada reinicio del proceso invalida las cookies ya emitidas,
+// provocando 401 con cuerpo vacío. Al persistirlas, las cookies sobreviven a los reinicios.
+var dataProtectionDir = builder.Configuration["DataProtection:KeysDirectory"]
+    ?? "/root/.aspnet/DataProtection-Keys";
+Directory.CreateDirectory(dataProtectionDir);
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionDir))
+    .SetApplicationName("HomeschoolAI");
+
 builder.Services.AddHomeschoolEmail(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddPayments(builder.Configuration);
@@ -128,38 +138,12 @@ builder.Services.AddSingleton<IQueryEmbedder>(sp => new OnnxQueryEmbedder(
 builder.Services.AddSingleton<IEmbeddingRepository, EmbeddingRepository>();
 builder.Services.AddSingleton<ISearchService, SearchService>();
 
-// Semantic Kernel: Kernel Singleton con el chat completion de OpenAI y el plugin de currículo.
-// El plugin llama al puerto de entrada ISearchService (nunca al DbContext).
-var openAiApiKey = builder.Configuration["OpenAI:ApiKey"]
-    ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-var openAiModelId = builder.Configuration["OpenAI:ModelId"]
-    ?? Environment.GetEnvironmentVariable("OPENAI_MODEL_ID")
-    ?? "gpt-4o-mini";
+// Semantic Kernel (Adapters): Kernel Singleton con el chat completion de OpenAI y el
+// plugin de currículo (search_curriculum). El plugin llama a ISearchService (nunca al DbContext).
+builder.Services.AddHomeschoolSemanticKernel(builder.Configuration);
 
-builder.Services.AddSingleton<CurriculumPlugin>();
-builder.Services.AddSingleton<IAgentCompletionService, SemanticKernelAgentCompletionService>();
 builder.Services.AddSingleton<IConversationStore, InMemoryConversationStore>();
 builder.Services.AddScoped<IChatService, ChatService>();
-
-builder.Services.AddSingleton<Kernel>(sp =>
-{
-    var kernelBuilder = Kernel.CreateBuilder();
-
-    if (!string.IsNullOrWhiteSpace(openAiApiKey))
-    {
-        kernelBuilder.AddOpenAIChatCompletion(modelId: openAiModelId, apiKey: openAiApiKey);
-    }
-    else
-    {
-        sp.GetRequiredService<ILoggerFactory>()
-            .CreateLogger("SemanticKernel")
-            .LogWarning("OPENAI_API_KEY no está configurada: el endpoint /api/agent/chat responderá con error hasta que se defina.");
-    }
-
-    var kernel = kernelBuilder.Build();
-    kernel.Plugins.AddFromObject(sp.GetRequiredService<CurriculumPlugin>(), "curriculum");
-    return kernel;
-});
 
 // Limitación de tasa para el endpoint que llama a un LLM (OWASP: disponibilidad y coste).
 builder.Services.AddRateLimiter(options =>

@@ -8,4 +8,5 @@ public sealed record UserContext(
     string FamilyMemberId,
     Guid FamilyId,
     UserRole Role,
-    Guid? ChildProfileId = null);
+    Guid? ChildProfileId = null,
+    string? ChildName = null);

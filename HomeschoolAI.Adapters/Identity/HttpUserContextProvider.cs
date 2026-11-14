@@ -29,6 +29,7 @@ public sealed class HttpUserContextProvider : IUserContextProvider
         var familyIdRaw = principal.FindFirstValue(ClaimNames.FamilyId);
         var roleRaw = principal.FindFirstValue(ClaimNames.Role);
         var childProfileIdRaw = principal.FindFirstValue(ClaimNames.ChildProfileId);
+        var childName = principal.FindFirstValue(ClaimNames.ChildName);
 
         if (memberId is null || familyIdRaw is null || roleRaw is null || !Guid.TryParse(familyIdRaw, out var familyId))
         {
@@ -50,6 +51,6 @@ public sealed class HttpUserContextProvider : IUserContextProvider
 
         var childProfileId = Guid.TryParse(childProfileIdRaw, out var cpid) ? cpid : (Guid?)null;
 
-        return Task.FromResult<UserContext?>(new UserContext(memberId, familyId, role.Value, childProfileId));
+        return Task.FromResult<UserContext?>(new UserContext(memberId, familyId, role.Value, childProfileId, childName));
     }
 }

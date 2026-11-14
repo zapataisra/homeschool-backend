@@ -13,8 +13,12 @@ public static class SecurityEndpoints
         endpoints.MapGet("/api/antiforgery/token", (HttpContext httpContext, IAntiforgery antiforgery) =>
             {
                 var tokens = antiforgery.GetAndStoreTokens(httpContext);
-                return Results.Ok(new { token = tokens.RequestToken });
+                return Results.Ok(new AntiforgeryTokenResponse(tokens.RequestToken ?? string.Empty));
             })
-            .WithName("GetAntiforgeryToken");
+            .WithName("GetAntiforgeryToken")
+            .Produces<AntiforgeryTokenResponse>(StatusCodes.Status200OK);
     }
 }
+
+/// <summary>Respuesta del endpoint de token anti-CSRF (expuesta en OpenAPI para el frontend).</summary>
+public sealed record AntiforgeryTokenResponse(string Token);

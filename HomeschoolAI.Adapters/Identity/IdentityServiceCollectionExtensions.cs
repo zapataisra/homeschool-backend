@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using HomeschoolAI.Adapters.Email;
+using HomeschoolAI.Adapters.Learning;
 using HomeschoolAI.Application.Ports;
 using HomeschoolAI.Domain.Auth;
 
@@ -22,8 +23,9 @@ public static class IdentityServiceCollectionExtensions
         string connectionString)
     {
         // Contexto de escritura. No usa UseVector(): en este esquema no hay columnas vector.
+        // El historial de migraciones vive SIEMPRE en app_identity (nunca en public).
         services.AddDbContext<AppDbContext>(dbOptions =>
-            dbOptions.UseNpgsql(connectionString));
+            dbOptions.UseNpgsql(connectionString, npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "app_identity")));
 
         // Identity para el usuario FamilyMember.
         services.AddIdentityCore<FamilyMember>(identity =>
@@ -82,6 +84,7 @@ public static class IdentityServiceCollectionExtensions
         services.AddScoped<IFamilyService, IdentityFamilyService>();
         services.AddScoped<IProgressService, ProgressService>();
         services.AddScoped<IInteractionQuotaService, InteractionQuotaService>();
+        services.AddScoped<IChildLearningRepository, ChildLearningRepository>();
 
         // Políticas de autorización por rol (Owner, Guardian, Child).
         services.AddHomeschoolAuthorization();

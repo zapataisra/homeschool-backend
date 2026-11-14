@@ -32,12 +32,12 @@ Ritmo diario: 4 h construir, 1 h aprender, 1 h medir, 30 min explicar (preguntas
 - Matriz endpoint × rol y pruebas IDOR automatizadas.
 - Terminado cuando: ninguna petición de otra familia ni de un rol insuficiente tiene éxito, verificado en CI, y existe el informe de seguridad v1.
 
-## Semana 4: Crítico, LUMI y orquestador (C#)
+## Semana 4: Crítico, Axolotl y orquestador (C#)
 
 - IMathValidator determinista (fracciones, operaciones básicas, unidades) con pruebas.
 - Crítico con Paso A (números) y Paso B (estrategia contra un conjunto cerrado); EvaluationJSON.
 - Flujo de aprobación parental y auditoría de cada evaluación.
-- LUMI con memoria; orquestador de la Demo con máximo 3 intentos, XP e insignias.
+- Axolotl con memoria; orquestador de la Demo con máximo 3 intentos, XP e insignias.
 - Las herramientas de los agentes verifican autorización con el contexto del usuario.
 - Terminado cuando: Demo de texto completa de punta a punta, los casos trampa (por ejemplo, 4x3=15) se detectan y un intento de usar una herramienta con permisos ajenos falla.
 
@@ -52,7 +52,7 @@ Ritmo diario: 4 h construir, 1 h aprender, 1 h medir, 30 min explicar (preguntas
 ## Semana 6: voz, visión y UI mínima
 
 - Transcripción con la API de OpenAI y con faster-whisper local; mide tasa de error, latencia y costo con 20 audios sintéticos.
-- Síntesis de voz para LUMI.
+- Síntesis de voz para Axolotl.
 - Foto del proyecto con un modelo multimodal; defensa contra texto malicioso dentro de la imagen; moderación en cada turno.
 - PWA mínima: registro e inicio de sesión, selección de perfil de niño, tablón, voz, cámara, resultado y pantalla de plan y pago.
 - Terminado cuando: demo con voz y foto de punta a punta, con datos sintéticos, desde el registro hasta el resultado.

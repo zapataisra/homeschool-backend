@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
 using HomeschoolAI.Adapters.Identity;
+using HomeschoolAI.Application.Ports;
 using HomeschoolAI.Domain.Conversation;
 using Xunit;
 
@@ -72,7 +73,7 @@ public sealed class IdentityTestContext : IAsyncLifetime
         await EnsureDatabaseCreatedAsync(adminConnection);
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(testConnection)
+            .UseNpgsql(testConnection, npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", "app_identity"))
             .Options;
 
         await using var db = new AppDbContext(options);
@@ -119,6 +120,9 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<IAgentCompletionService>();
             services.AddSingleton<IAgentCompletionService>(new FakeAgentCompletionService { Reply = EvaluationJson });
+
+            services.RemoveAll<ISearchService>();
+            services.AddSingleton<ISearchService>(new FakeSearchService());
         });
     }
 }

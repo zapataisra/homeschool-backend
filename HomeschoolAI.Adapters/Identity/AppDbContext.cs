@@ -26,6 +26,8 @@ public sealed class AppDbContext : IdentityDbContext<FamilyMember>
 
     public DbSet<ChildProgress> ChildProgress => Set<ChildProgress>();
 
+    public DbSet<ChildTopicProgress> ChildTopicProgresses => Set<ChildTopicProgress>();
+
     public DbSet<PaymentEvent> PaymentEvents => Set<PaymentEvent>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -79,6 +81,7 @@ public sealed class AppDbContext : IdentityDbContext<FamilyMember>
             entity.Property(c => c.Name).HasColumnName("name").IsRequired().HasMaxLength(100);
             entity.Property(c => c.Grade).HasColumnName("grade").IsRequired();
             entity.Property(c => c.Fase).HasColumnName("fase");
+            entity.Property(c => c.AvatarUrl).HasColumnName("avatar_url").IsRequired().HasMaxLength(255).HasDefaultValue("avatar-aguila.svg");
             entity.Property(c => c.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
 
             entity.HasOne(c => c.Family)
@@ -100,6 +103,34 @@ public sealed class AppDbContext : IdentityDbContext<FamilyMember>
             entity.HasOne<ChildProfile>()
                 .WithOne()
                 .HasForeignKey<ChildProgress>(c => c.ChildProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<ChildTopicProgress>(entity =>
+        {
+            entity.ToTable("child_topic_progress");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(e => e.ChildProfileId).HasColumnName("child_profile_id").IsRequired();
+            entity.Property(e => e.TopicId).HasColumnName("topic_id").IsRequired().HasMaxLength(128);
+            entity.Property(e => e.TopicTitle).HasColumnName("topic_title").IsRequired().HasMaxLength(255);
+            entity.Property(e => e.CampoFormativo).HasColumnName("campo_formativo").IsRequired().HasMaxLength(128);
+            entity.Property(e => e.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(16).IsRequired();
+            entity.Property(e => e.Attempts).HasColumnName("attempts").IsRequired().HasDefaultValue(0);
+            entity.Property(e => e.TimeSpentSeconds).HasColumnName("time_spent_seconds").IsRequired().HasDefaultValue(0);
+            entity.Property(e => e.BadgeEarned).HasColumnName("badge_earned").HasMaxLength(128);
+            entity.Property(e => e.StartedAtUtc).HasColumnName("started_at_utc").IsRequired();
+            entity.Property(e => e.LastActivityAtUtc).HasColumnName("last_activity_at_utc").IsRequired();
+            entity.Property(e => e.CompletedAtUtc).HasColumnName("completed_at_utc");
+
+            // Un único registro de progreso por (niño, tema).
+            entity.HasIndex(e => new { e.ChildProfileId, e.TopicId }).IsUnique();
+
+            entity.HasOne<ChildProfile>()
+                .WithMany()
+                .HasForeignKey(e => e.ChildProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

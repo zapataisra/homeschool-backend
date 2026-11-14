@@ -38,6 +38,7 @@ public static class AuthorizationPolicies
 
             options.AddPolicy(RequireChild, policy =>
                 policy.RequireAuthenticatedUser()
+                    .RequireClaim(ClaimNames.FamilyId)
                     .RequireClaim(ClaimNames.Role, nameof(UserRole.Child))
                     .RequireClaim(ClaimNames.ChildProfileId));
 

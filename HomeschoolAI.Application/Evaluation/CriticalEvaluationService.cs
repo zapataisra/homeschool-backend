@@ -15,7 +15,7 @@ namespace HomeschoolAI.Application.Evaluation;
 public sealed class CriticalEvaluationService
 {
     private const string SystemInstruction =
-        "Eres el Agente Crítico de LUMI, un evaluador matemático. Analiza la respuesta de la niña y devuelve " +
+        "Eres el Agente Crítico de la plataforma Escuela en casa MX, un evaluador matemático. Analiza la respuesta de la niña y devuelve " +
         "ESTRICTAMENTE un objeto JSON con este esquema (sin texto adicional, sin comillas de markdown):\n" +
         "{ \"precision\": 0-100, \"confidence\": 0.0-1.0, \"missingConcepts\": [\"...\"], " +
         "\"extractedOperation\": { \"operand1\": numero, \"operation\": \"+\"|\"-\"|\"*\"|\"/\", \"operand2\": numero, \"proposedResult\": numero }, " +

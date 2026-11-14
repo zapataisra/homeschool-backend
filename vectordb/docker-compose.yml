@@ -78,33 +78,33 @@ services:
     depends_on:
       - api
 
-  api-prod:
-    build:
-      context: ..
-      dockerfile: Dockerfile
-      target: runtime
-    container_name: homeschool_api_prod
-    restart: unless-stopped
-    environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_READONLY_USER};Password=${POSTGRES_READONLY_PASSWORD}"
-      ConnectionStrings__IdentityConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_IDENTITY_RW_USER};Password=${POSTGRES_IDENTITY_RW_PASSWORD}"
-      OPENAI__ApiKey: ${OPENAI_API_KEY}
-      Stripe__SecretKey: ${STRIPE_SECRET_KEY}
-      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}
-      Stripe__PriceId: ${STRIPE_PRICE_ID}
-      Email__Host: mailpit
-      Email__Port: "1025"
-      Email__From: "no-reply@homeschool.local"
-      EMBEDDING_MODEL_DIR: /app/models/all-MiniLM-L6-v2
-    ports:
-      - "127.0.0.1:8081:8080"
-    volumes:
-      - ../models:/app/models
-      - ../logs:/app/logs
-    depends_on:
-      - db
+##  api-prod:
+#    build:
+#      context: ..
+#      dockerfile: Dockerfile
+#      target: runtime
+#    container_name: homeschool_api_prod
+#    restart: unless-stopped
+#    environment:
+#      ASPNETCORE_ENVIRONMENT: Production
+#      ASPNETCORE_URLS: http://+:8080
+#      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_READONLY_USER};Password=${POSTGRES_READONLY_PASSWORD}"
+#      ConnectionStrings__IdentityConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_IDENTITY_RW_USER};Password=${POSTGRES_IDENTITY_RW_PASSWORD}"
+#      OPENAI__ApiKey: ${OPENAI_API_KEY}
+#      Stripe__SecretKey: ${STRIPE_SECRET_KEY}
+#      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}
+#      Stripe__PriceId: ${STRIPE_PRICE_ID}
+#      Email__Host: mailpit
+#      Email__Port: "1025"
+#      Email__From: "no-reply@homeschool.local"
+#      EMBEDDING_MODEL_DIR: /app/models/all-MiniLM-L6-v2
+#    ports:
+#      - "127.0.0.1:8081:8080"
+#    volumes:
+#      - ../models:/app/models
+#      - ../logs:/app/logs
+#    depends_on:
+#      - db
 
 volumes:
   pgdata:

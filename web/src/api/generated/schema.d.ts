@@ -71,6 +71,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agent/session/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StartLearningSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/register": {
         parameters: {
             query?: never;
@@ -267,9 +283,35 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ActiveLessonDto: {
+            topicId?: string | null;
+            schemaVersion?: string | null;
+            title?: string | null;
+            campoFormativo?: string | null;
+            weeklyProjectTitle?: string | null;
+            weeklyProjectGoal?: string | null;
+            blocks?: components["schemas"]["LessonBlockDto"][] | null;
+        };
         AgentChatRequest: {
             threadId?: string | null;
             message?: string | null;
+        };
+        AntiforgeryTokenResponse: {
+            token?: string | null;
+        };
+        ChatResponse: {
+            threadId?: string | null;
+            content?: string | null;
+        };
+        ChildProfileDto: {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            /** Format: int32 */
+            grade?: number;
+            /** Format: int32 */
+            fase?: number | null;
+            avatarUrl?: string | null;
         };
         CreateChildRequest: {
             name?: string | null;
@@ -277,11 +319,47 @@ export interface components {
             grade?: number;
             /** Format: int32 */
             fase?: number | null;
+            avatarUrl?: string | null;
         };
         EvaluateRequest: {
             text?: string | null;
             /** Format: int32 */
             attempt?: number;
+        };
+        ExplorerSummaryDto: {
+            childName?: string | null;
+            /** Format: int32 */
+            grade?: number;
+            /** Format: int32 */
+            fase?: number | null;
+            avatarUrl?: string | null;
+        };
+        LearningMetricsDto: {
+            /** Format: int32 */
+            currentLevel?: number;
+            /** Format: int32 */
+            totalXp?: number;
+            /** Format: int32 */
+            totalTimeSpentSeconds?: number;
+            /** Format: int32 */
+            averageTimePerTopicSeconds?: number;
+            /** Format: int32 */
+            completedTopicsCount?: number;
+            badgesEarned?: string[] | null;
+            topicHistory?: components["schemas"]["TopicHistoryItemDto"][] | null;
+        };
+        LearningSessionResponse: {
+            explorer?: components["schemas"]["ExplorerSummaryDto"];
+            metrics?: components["schemas"]["LearningMetricsDto"];
+            activeLesson?: components["schemas"]["ActiveLessonDto"];
+            threadId?: string | null;
+            initialAxolotlMessage?: string | null;
+        };
+        LessonBlockDto: {
+            type?: string | null;
+            content?: string | null;
+            altText?: string | null;
+            narrationText?: string | null;
         };
         LoginRequest: {
             email?: string | null;
@@ -299,6 +377,19 @@ export interface components {
             limit?: number | null;
             /** Format: int32 */
             pool?: number | null;
+        };
+        TopicHistoryItemDto: {
+            topicId?: string | null;
+            topicTitle?: string | null;
+            campoFormativo?: string | null;
+            status?: string | null;
+            /** Format: int32 */
+            attempts?: number;
+            /** Format: int32 */
+            timeSpentSeconds?: number;
+            badgeEarned?: string | null;
+            /** Format: date-time */
+            lastActivityAtUtc?: string;
         };
     };
     responses: never;
@@ -349,7 +440,36 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content: {
+                    "application/json": components["schemas"]["ChatResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content?: never;
+            };
+        };
+    };
+    StartLearningSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningSessionResponse"];
+                };
             };
         };
     };
@@ -447,7 +567,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ChildProfileDto"][];
+                };
             };
         };
     };
@@ -601,7 +723,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AntiforgeryTokenResponse"];
+                };
             };
         };
     };

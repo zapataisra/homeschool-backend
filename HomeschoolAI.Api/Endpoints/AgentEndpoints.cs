@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
+using HomeschoolAI.Adapters.Identity;
 using HomeschoolAI.Application.Chat;
+using HomeschoolAI.Application.Learning;
 using HomeschoolAI.Application.Ports;
 
 namespace HomeschoolAI.Api.Endpoints;
 
 /// <summary>
-/// Endpoint del agente conversacional LUMI (POST /api/agent/chat).
+/// Endpoint del agente conversacional Axolotl (POST /api/agent/chat).
 /// El cliente envía solo <c>{ threadId?, message }</c>; el historial de la
 /// conversación se conserva en el servidor (nunca se acepta el historial completo).
 /// </summary>
@@ -52,7 +54,18 @@ public static class AgentEndpoints
             })
             .WithName("AgentChat")
             .RequireRateLimiting("agent")
-            .RequireAuthorization();
+            .RequireAuthorization(AuthorizationPolicies.RequireChild)
+            .Produces<ChatResponse>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest);
+
+        endpoints.MapPost("/api/agent/session/start", async (
+                IChatService chatService,
+                CancellationToken cancellationToken) =>
+                Results.Ok(await chatService.StartLearningSessionAsync(cancellationToken)))
+            .WithName("StartLearningSession")
+            .RequireRateLimiting("agent")
+            .RequireAuthorization(AuthorizationPolicies.RequireChild)
+            .Produces<LearningSessionResponse>(StatusCodes.Status200OK);
     }
 
     private static bool IsValidThreadId(string value)

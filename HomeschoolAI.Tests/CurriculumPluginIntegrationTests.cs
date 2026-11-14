@@ -9,6 +9,7 @@ using Pgvector.Npgsql;
 using HomeschoolAI.Adapters.Embedding;
 using HomeschoolAI.Adapters.Persistence;
 using HomeschoolAI.Adapters.SemanticKernel;
+using HomeschoolAI.Application.Chat;
 using HomeschoolAI.Application.Search;
 using Xunit;
 using Xunit.Abstractions;
@@ -67,10 +68,7 @@ public class CurriculumPluginIntegrationTests
         var chat = kernel.Services.GetRequiredService<IChatCompletionService>();
 
         var history = new ChatHistory();
-        history.AddSystemMessage(
-            "Eres LUMI, asistente para docentes de educación primaria en México. " +
-            "Fundamenta tus respuestas sobre el currículo usando la función search_curriculum " +
-            "para citar los Programas Sintéticos de la SEP.");
+        history.AddSystemMessage(AxolotlPrompts.FeynmanTutorSystemPrompt);
         history.AddUserMessage("¿Qué es el codiseño escolar?");
 
         var stopwatch = Stopwatch.StartNew();

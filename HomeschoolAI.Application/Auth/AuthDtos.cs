@@ -29,4 +29,7 @@ public sealed class CreateChildRequest
     public int Grade { get; init; }
 
     public int? Fase { get; init; }
+
+    /// <summary>Nombre del archivo de avatar seleccionado (p. ej. "avatar-aguila.svg").</summary>
+    public string AvatarUrl { get; init; } = string.Empty;
 }

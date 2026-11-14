@@ -9,11 +9,11 @@ using Microsoft.SemanticKernel;
 
 namespace HomeschoolAI.Adapters.SemanticKernel;
 
-/// <summary>
-/// Plugin nativo de Semantic Kernel: el "Agente Bibliotecario" de LUMI.
-/// Expone la búsqueda híbrida sobre los Programas Sintéticos de la SEP como una
-/// función invocable por el LLM mediante function calling.
-/// </summary>
+   /// Plugin nativo de Semantic Kernel.
+   /// Expone la búsqueda híbrida sobre el currículo educativo de la SEP/INEA como una
+   /// función invocable por el LLM mediante function calling. Este plugin es usado por el Axolotl Guía para fundamentar
+   /// sus tutorías con los niños bajo el Método Feynman.
+   /// </summary>
 public sealed class CurriculumPlugin
 {
     private readonly ISearchService _searchService;
@@ -26,9 +26,9 @@ public sealed class CurriculumPlugin
     }
 
     [KernelFunction("search_curriculum")]
-    [Description("Busca fragmentos de los Programas Sintéticos de la SEP (Fases 3, 4 y 5) relevantes para una pregunta sobre el currículo de educación primaria. Devuelve el texto curricular citando su fuente (PDF y fragmento).")]
+    [Description("Busca fragmentos oficiales del currículo educativo de México (SEP/INEA). Úsalo siempre antes de enseñar un concepto nuevo para asegurarte de que tu explicación se basa en el plan de estudios oficial.")]
     public async Task<string> SearchCurriculumAsync(
-        [Description("Pregunta o tema del docente sobre el currículo de primaria que se desea fundamentar.")] string question,
+        [Description("El tema educativo, concepto o pregunta específica que el niño está estudiando y sobre la cual necesitas contexto del plan de estudios.")] string question,
         CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();

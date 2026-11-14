@@ -1,7 +1,7 @@
 namespace HomeschoolAI.Domain.Conversation;
 
 /// <summary>
-/// Puerto de salida: orquestación del agente LUMI (LLM + herramientas).
+/// Puerto de salida: orquestación del agente Axolotl (LLM + herramientas).
 /// La implementación con Semantic Kernel vive en Adapters; el dominio no
 /// conoce Semantic Kernel ni OpenAI.
 /// </summary>
