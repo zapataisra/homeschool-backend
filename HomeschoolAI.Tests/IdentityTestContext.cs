@@ -119,7 +119,10 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IAgentCompletionService>();
-            services.AddSingleton<IAgentCompletionService>(new FakeAgentCompletionService { Reply = EvaluationJson });
+            services.AddSingleton<IAgentCompletionService>(new FakeAgentCompletionService
+            {
+                ReplySelector = prompt => prompt.Contains("extractedOperation") ? EvaluationJson : "respuesta simulada de Axolotl"
+            });
 
             services.RemoveAll<ISearchService>();
             services.AddSingleton<ISearchService>(new FakeSearchService());

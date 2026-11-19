@@ -1,11 +1,11 @@
-using HomeschoolAI.Application.Validation;
+using HomeschoolAI.Domain.Validation;
 using Xunit;
 
 namespace HomeschoolAI.Tests;
 
 public class MathValidatorTests
 {
-    private readonly MathValidator _validator = new();
+    private readonly IMathValidator _validator = new DeterministicMathValidator();
 
     [Theory]
     [InlineData(2, "+", 3, 5, true)]
@@ -81,5 +81,43 @@ public class MathValidatorTests
         // 1 / 3 en decimal tiene precisión fija; el resultado propuesto debe coincidir exactamente.
         Assert.True(_validator.ValidateOperation(1m, "/", 3m, 1m / 3m));
         Assert.False(_validator.ValidateOperation(1m, "/", 3m, 0.33m));
+    }
+
+    [Theory]
+    [InlineData("4 * 3 = 12", true)]
+    [InlineData("4 * 3 = 15", false)]
+    [InlineData("4*3=12", true)]
+    [InlineData("2/4 = 1/2", true)]
+    [InlineData("2/4 > 3/8", true)]
+    [InlineData("3/8 > 2/4", false)]
+    [InlineData("1/2 + 1/4 = 3/4", true)]
+    [InlineData("2 + 3 = 5", true)]
+    [InlineData("2 + 3 = 6", false)]
+    [InlineData("10 - 4 = 6", true)]
+    [InlineData("1/2 >= 1/2", true)]
+    [InlineData("1/2 <= 3/4", true)]
+    [InlineData("1/2 < 3/4", true)]
+    [InlineData("1/2 == 2/4", true)]
+    [InlineData("4 × 3 = 12", true)]
+    [InlineData("4 x 3 = 12", true)]
+    [InlineData("20 ÷ 4 = 5", true)]
+    public void Validates_full_expression(string expression, bool expected)
+    {
+        Assert.Equal(expected, _validator.ValidateExpression(expression));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("abc")]
+    [InlineData("4 * 3")]
+    [InlineData("4 * 3 =")]
+    [InlineData("= 12")]
+    [InlineData("4 / 0 = 5")]
+    [InlineData("2/0 = 0")]
+    [InlineData("4 ** 3 = 12")]
+    public void Invalid_expressions_return_false(string expression)
+    {
+        Assert.False(_validator.ValidateExpression(expression));
     }
 }

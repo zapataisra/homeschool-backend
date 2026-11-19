@@ -10,4 +10,7 @@ public interface IConversationStore
     Task<ConversationHistory> GetOrCreateAsync(string userId, string threadId, CancellationToken cancellationToken = default);
 
     Task SaveAsync(string userId, ConversationHistory history, CancellationToken cancellationToken = default);
+
+    /// <summary>Borra todos los mensajes de la sesión (para no mezclar historiales entre misiones).</summary>
+    Task ClearAsync(string userId, string threadId, CancellationToken cancellationToken = default);
 }

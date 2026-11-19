@@ -46,10 +46,27 @@ export default {
           "80%": { transform: "scale(0.96)" },
           "100%": { transform: "scale(1)", opacity: "1" },
         },
+        // Deslizamiento horizontal suave del carrusel de láminas.
+        "slide-in-right": {
+          "0%": { transform: "translateX(24px)", opacity: "0" },
+          "100%": { transform: "translateX(0)", opacity: "1" },
+        },
+        "slide-in-left": {
+          "0%": { transform: "translateX(-24px)", opacity: "0" },
+          "100%": { transform: "translateX(0)", opacity: "1" },
+        },
+        // Barras de sonido del indicador de voz de Axolotl.
+        soundbar: {
+          "0%, 100%": { transform: "scaleY(0.3)" },
+          "50%": { transform: "scaleY(1)" },
+        },
       },
       animation: {
         breathe: "breathe 3.5s ease-in-out infinite",
         "bounce-in": "bounce-in 0.4s ease-out",
+        "slide-in-right": "slide-in-right 0.3s ease-in-out",
+        "slide-in-left": "slide-in-left 0.3s ease-in-out",
+        soundbar: "soundbar 0.9s ease-in-out infinite",
       },
     },
   },

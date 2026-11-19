@@ -14,6 +14,9 @@ public sealed class EvaluationResultDto
     /// <summary>Conceptos faltantes detectados en la estrategia de la niña.</summary>
     public List<string> MissingConcepts { get; init; } = new();
 
+    /// <summary>Pista para reformular la explicación sin dar la respuesta directa.</summary>
+    public string? ReformulationHint { get; init; }
+
     /// <summary>Operación aritmética extraída de la respuesta (lista para validar).</summary>
     public ExtractedOperationDto? ExtractedOperation { get; init; }
 
@@ -24,6 +27,9 @@ public sealed class EvaluationResultDto
 /// <summary>Operación aritmética extraída por el LLM, para validar con <c>IMathValidator</c>.</summary>
 public sealed class ExtractedOperationDto
 {
+    /// <summary>Expresión completa (p. ej. <c>"4 * 3 = 15"</c> o <c>"2/4 &gt; 3/8"</c>); se valida con <see cref="Validation.IMathValidator.ValidateExpression"/>.</summary>
+    public string? Expression { get; init; }
+
     public decimal Operand1 { get; init; }
 
     public string Operation { get; init; } = string.Empty;
@@ -37,4 +43,5 @@ public sealed class ExtractedOperationDto
 public sealed record CriticalEvaluationResult(
     EvaluationResultDto? Evaluation,
     bool MathIsCorrect,
-    int XpAwarded);
+    int XpAwarded,
+    bool StepAValid);

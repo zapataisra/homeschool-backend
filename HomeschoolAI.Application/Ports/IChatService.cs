@@ -10,6 +10,6 @@ public interface IChatService
 {
     Task<ChatResponse> SendAsync(ChatRequest request, CancellationToken cancellationToken = default);
 
-    /// <summary>Inicia la sesión de aprendizaje proactiva del niño (tema del día + saludo de Axolotl).</summary>
-    Task<LearningSessionResponse> StartLearningSessionAsync(CancellationToken cancellationToken = default);
+    /// <summary>Inicia la sesión de aprendizaje proactiva del niño (tema del día + saludo de Axolotl), o el selector de misiones si no hay tema en curso.</summary>
+    Task<LearningSessionResponse> StartLearningSessionAsync(string? topicId = null, CancellationToken cancellationToken = default);
 }

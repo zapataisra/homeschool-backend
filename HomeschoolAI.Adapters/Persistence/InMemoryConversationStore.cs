@@ -64,6 +64,13 @@ public sealed partial class InMemoryConversationStore : IConversationStore
         return Task.CompletedTask;
     }
 
+    public Task ClearAsync(string userId, string threadId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        _threads.TryRemove(Key(userId, threadId), out _);
+        return Task.CompletedTask;
+    }
+
     private static string Key(string userId, string threadId) => $"{userId}:{threadId}";
 
     private void EvictOldest()

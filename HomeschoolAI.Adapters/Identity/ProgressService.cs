@@ -8,14 +8,11 @@ namespace HomeschoolAI.Adapters.Identity;
 
 /// <summary>
 /// Persiste el progreso de aprendizaje (XP y nivel) en <see cref="AppDbContext"/>.
-/// La regla de nivel es determinista y provisional: 1 nivel por cada 100 XP,
-/// empezando en nivel 1. La decide el código, nunca el LLM.
+/// La regla de nivel es determinista y vive en <see cref="ChildProgress"/> (1 nivel
+/// por cada <see cref="ChildProgress.XpPerLevel"/> XP). La decide el código, nunca el LLM.
 /// </summary>
 public sealed class ProgressService : IProgressService
 {
-    /// <summary>XP necesarios para subir un nivel (regla determinista provisional).</summary>
-    public const int XpPerLevel = 100;
-
     private readonly AppDbContext _db;
     private readonly ILogger<ProgressService> _logger;
 
@@ -53,7 +50,7 @@ public sealed class ProgressService : IProgressService
         }
 
         progress.TotalXP += xpToAdd;
-        progress.CurrentLevel = CalculateLevel(progress.TotalXP);
+        progress.CurrentLevel = ChildProgress.CalculateLevel(progress.TotalXP);
 
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -67,6 +64,4 @@ public sealed class ProgressService : IProgressService
             progress.CurrentLevel,
             LeveledUp: progress.CurrentLevel > previousLevel);
     }
-
-    private static int CalculateLevel(int totalXp) => totalXp / XpPerLevel + 1;
 }

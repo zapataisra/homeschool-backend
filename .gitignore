@@ -24,6 +24,12 @@ logs/
 parity_check.py
 parity_data.json
 
+# Script local de reseteo de datos de un alumno (NUNCA publicar: contiene credenciales de desarrollo)
+reset-alumno.ps1
+
 #instrucciones para cline
 DISENO_ACCESO_PAGOS.md 
 CONTRATO.md
+
+# Frontend (generados, no se versionan)
+web/public/lessons/

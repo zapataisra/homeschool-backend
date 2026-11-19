@@ -128,4 +128,45 @@ public class IdentityIntegrationTests
         var attempt = await clientB.PostAsync($"/api/family/children/{childA!.Id}/session", null);
         Assert.Equal(HttpStatusCode.NotFound, attempt.StatusCode);
     }
+
+    [Fact]
+    public async Task Child_can_exit_session_list_children_and_switch_explorer()
+    {
+        using var client = _ctx.CreateClient();
+
+        var register = await client.PostAsync("/api/auth/register", Json(new
+        {
+            email = $"owner_{Guid.NewGuid():N}@test.com",
+            password = "Password1!",
+            familyName = "Familia Cambiar"
+        }));
+        Assert.Equal(HttpStatusCode.OK, register.StatusCode);
+
+        var createA = await client.PostAsync("/api/family/children", Json(new { name = "Explorador A", grade = 3 }));
+        Assert.Equal(HttpStatusCode.OK, createA.StatusCode);
+        var childA = await createA.Content.ReadFromJsonAsync<ChildProfileDto>();
+
+        var createB = await client.PostAsync("/api/family/children", Json(new { name = "Explorador B", grade = 4 }));
+        Assert.Equal(HttpStatusCode.OK, createB.StatusCode);
+        var childB = await createB.Content.ReadFromJsonAsync<ChildProfileDto>();
+
+        // Entra en la sesión delegada del explorador A (rol Child).
+        var sessionA = await client.PostAsync($"/api/family/children/{childA!.Id}/session", null);
+        Assert.Equal(HttpStatusCode.OK, sessionA.StatusCode);
+
+        // En sesión Child no puede listar exploradores (matriz de roles).
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.GetAsync("/api/family/children")).StatusCode);
+
+        // Sale de la sesión delegada y restaura la cookie del adulto.
+        var exit = await client.PostAsync("/api/auth/exit-child", null);
+        Assert.Equal(HttpStatusCode.OK, exit.StatusCode);
+
+        // Vuelve a listar exploradores de su misma familia (200 OK).
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/family/children")).StatusCode);
+
+        // Cambia al explorador B dentro de la misma familia (Cero IDOR).
+        var sessionB = await client.PostAsync($"/api/family/children/{childB!.Id}/session", null);
+        Assert.Equal(HttpStatusCode.OK, sessionB.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/family/me")).StatusCode);
+    }
 }

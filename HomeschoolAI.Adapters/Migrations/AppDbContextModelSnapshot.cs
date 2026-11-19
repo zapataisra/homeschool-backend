@@ -177,6 +177,41 @@ namespace HomeschoolAI.Adapters.Migrations
                     b.ToTable("AspNetUsers", "app_identity");
                 });
 
+            modelBuilder.Entity("HomeschoolAI.Adapters.Persistence.ConversationMessageEntity", b =>
+                {
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("role");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("session_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId", "CreatedAtUtc");
+
+                    b.ToTable("conversation_messages", "app_identity");
+                });
+
             modelBuilder.Entity("HomeschoolAI.Domain.Billing.PaymentEvent", b =>
                 {
                     b.Property<Guid>("Id")

@@ -41,5 +41,13 @@ public static class AuthEndpoints
             })
             .WithName("Logout")
             .RequireAuthorization();
+
+        endpoints.MapPost("/api/auth/exit-child", async (
+                IAuthService authService,
+                CancellationToken cancellationToken) =>
+                Results.Ok(await authService.ExitChildSessionAsync(cancellationToken)))
+            .WithName("ExitChildSession")
+            .RequireAuthorization()
+            .Produces<AuthResponse>(StatusCodes.Status200OK);
     }
 }

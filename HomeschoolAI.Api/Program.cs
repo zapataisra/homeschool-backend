@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Npgsql;
 using Pgvector.EntityFrameworkCore;
 using Pgvector.Npgsql;
@@ -13,11 +15,13 @@ using Microsoft.OpenApi.Models;
 using HomeschoolAI.Adapters.Embedding;
 using HomeschoolAI.Adapters.Email;
 using HomeschoolAI.Adapters.Identity;
+using HomeschoolAI.Adapters.Learning;
 using HomeschoolAI.Adapters.Payments;
 using HomeschoolAI.Adapters.Persistence;
 using HomeschoolAI.Adapters.SemanticKernel;
 using HomeschoolAI.Api.Endpoints;
 using HomeschoolAI.Api.Middleware;
+using HomeschoolAI.Api.OpenApi;
 using HomeschoolAI.Application.Chat;
 using HomeschoolAI.Application.DependencyInjection;
 using HomeschoolAI.Application.Ports;
@@ -67,6 +71,8 @@ builder.Services.AddOpenTelemetry()
 
 // Swagger/OpenAPI: expone el documento en /swagger/v1/swagger.json (solo en Development).
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -75,6 +81,7 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1",
         Description = "API de la plataforma Escuela en casa MX: RAG sobre los Programas Sintéticos de la SEP, identidad, evaluación y pagos."
     });
+    options.SchemaFilter<EnumStringSchemaFilter>();
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -105,6 +112,24 @@ builder.Services.AddDbContext<HomeschoolDbContext>(options =>
 // Identidad y accesos: contexto de escritura en el esquema `app_identity`.
 // Usa IdentityConnection (escritura/DDL); DefaultConnection (solo lectura) queda para el RAG.
 builder.Services.AddHomeschoolIdentity(identityConnectionString);
+
+// Caché en memoria para el catálogo curricular (TTL 15 min; TTL corto si degrada a estático).
+builder.Services.AddMemoryCache();
+
+// Catálogo curricular dinámico: lee public.curriculum_topics (solo lectura) y, si la
+// base de datos no responde, respalda con el catálogo estático SeedCurriculumCatalog.
+builder.Services.AddSingleton<ICurriculumCatalog>(sp =>
+    new PostgresCurriculumCatalog(
+        sp.GetRequiredService<NpgsqlDataSource>(),
+        sp.GetRequiredService<IMemoryCache>(),
+        sp.GetRequiredService<ILogger<PostgresCurriculumCatalog>>()));
+
+// Cola de progreso pendiente + reconciliación automática cuando PostgreSQL vuelve a estar
+// disponible. El servicio de sincronización es Scoped (usa AppDbContext); el BackgroundService
+// crea un scope por lote y reintenta cada 10 segundos.
+builder.Services.AddSingleton<IPendingProgressSyncQueue, PendingProgressSyncQueue>();
+builder.Services.AddScoped<IProgressSyncService, ProgressSyncService>();
+builder.Services.AddHostedService<ProgressSyncBackgroundService>();
 
 // Persistencia de claves de DataProtection: con `dotnet watch` (hot reload) las claves
 // son efímeras por defecto y cada reinicio del proceso invalida las cookies ya emitidas,
@@ -142,7 +167,7 @@ builder.Services.AddSingleton<ISearchService, SearchService>();
 // plugin de currículo (search_curriculum). El plugin llama a ISearchService (nunca al DbContext).
 builder.Services.AddHomeschoolSemanticKernel(builder.Configuration);
 
-builder.Services.AddSingleton<IConversationStore, InMemoryConversationStore>();
+builder.Services.AddScoped<IConversationStore, PostgresConversationStore>();
 builder.Services.AddScoped<IChatService, ChatService>();
 
 // Limitación de tasa para el endpoint que llama a un LLM (OWASP: disponibilidad y coste).

@@ -4,9 +4,9 @@ Portafolio de ingeniería de IA para conseguir empleo en IA. Costo bajo: API de 
 
 ## Antes de trabajar
 
-1. Lee `docs/ai/ESTADO.md` (dónde voy) y `docs/ai/CONTRATO.md` (decisiones y esquemas).
+1. Lee `docs/ESTADO.md` (dónde voy) y `docs/CONTRATO.md` (decisiones y esquemas).
 2. Si una petición contradice el contrato, avísame antes de continuar.
-3. Usa el rol que corresponda en `docs/ai/roles/`.
+3. Usa el rol que corresponda en `docs/roles/`.
 
 ## Reglas globales
 

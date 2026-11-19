@@ -183,6 +183,33 @@ public sealed partial class IdentityAuthService : IAuthService
         return new ChildSessionResponse(child.Id, child.Name);
     }
 
+    public async Task<AuthResponse> ExitChildSessionAsync(CancellationToken cancellationToken = default)
+    {
+        var user = await _userContextProvider.GetAsync(cancellationToken)
+            ?? throw new InvalidCredentialsException();
+
+        if (user.Role != UserRole.Child)
+        {
+            // Ya hay una sesión adulta: no hay sesión delegada de la que salir (idempotente).
+            return new AuthResponse(user.FamilyMemberId, user.FamilyId, user.Role.ToString());
+        }
+
+        // La sesión delegada conserva el id del adulto en NameIdentifier (ver StartChildSessionAsync).
+        var adult = await _userManager.FindByIdAsync(user.FamilyMemberId)
+            ?? throw new InvalidCredentialsException();
+
+        if (adult.FamilyId != user.FamilyId)
+        {
+            throw new ForbiddenException("El adulto no pertenece a esta familia.");
+        }
+
+        await _signInManager.SignInAsync(adult, isPersistent: false);
+
+        LogChildSessionExited(_logger, adult.FamilyId, adult.Id.Length);
+
+        return new AuthResponse(adult.Id, adult.FamilyId, adult.Role.ToString());
+    }
+
     [LoggerMessage(EventId = 7001, Level = LogLevel.Information,
         Message = "Usuario registrado: familia {FamilyId}, longitud de correo {EmailLength}")]
     private static partial void LogRegistered(ILogger logger, Guid familyId, int emailLength);
@@ -194,5 +221,9 @@ public sealed partial class IdentityAuthService : IAuthService
     [LoggerMessage(EventId = 7003, Level = LogLevel.Information,
         Message = "Sesión de niño iniciada: familia {FamilyId}, niño {ChildId}, longitud de nombre {NameLength}")]
     private static partial void LogChildSessionStarted(ILogger logger, Guid familyId, Guid childId, int nameLength);
+
+    [LoggerMessage(EventId = 7004, Level = LogLevel.Information,
+        Message = "Sesión de niño finalizada: familia {FamilyId}, longitud de id de adulto {MemberIdLength}")]
+    private static partial void LogChildSessionExited(ILogger logger, Guid familyId, int memberIdLength);
 }
 

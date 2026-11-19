@@ -8,10 +8,16 @@ namespace HomeschoolAI.Domain.Progress;
 /// </summary>
 public sealed class ChildProgress
 {
+    /// <summary>XP necesarios para subir un nivel (regla determinista única: 1 nivel cada 100 XP).</summary>
+    public const int XpPerLevel = 100;
+
     /// <summary>Clave primaria y FK 1:1 hacia <c>ChildProfile.Id</c>.</summary>
     public Guid ChildProfileId { get; set; }
 
     public int TotalXP { get; set; }
 
     public int CurrentLevel { get; set; }
+
+    /// <summary>Nivel para una XP acumulada: empieza en 1 y sube 1 nivel por cada <see cref="XpPerLevel"/> XP.</summary>
+    public static int CalculateLevel(int totalXp) => totalXp / XpPerLevel + 1;
 }

@@ -17,7 +17,7 @@ public class EmbeddingsSepIntegrationTests
     }
 
     [Fact]
-    public async Task EmbeddingsSep_has_699_rows()
+    public async Task EmbeddingsSep_has_17434_rows()
     {
         // Localmente (BD en localhost:5432) configura las variables POSTGRES_* (rol app_readonly).
         // En Docker se sobrescribe con ConnectionStrings__DefaultConnection.
@@ -37,6 +37,6 @@ public class EmbeddingsSepIntegrationTests
         _output.WriteLine($"Filas en embeddings_sep: {count}");
         _output.WriteLine($"Tiempo total (cold start EF Core + primera conexion + consulta): {stopwatch.ElapsedMilliseconds} ms");
 
-        Assert.Equal(699, count);
+        Assert.Equal(17434, count);
     }
 }

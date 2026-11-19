@@ -43,13 +43,66 @@ public class LearningSessionIntegrationTests
     }
 
     [Fact]
+    public async Task Session_start_without_topic_returns_mission_selector_without_consuming_quota()
+    {
+        using var client = _ctx.CreateClient();
+        var (familyId, _) = await SetupChildSessionAsync(client);
+
+        await SetFreeInteractionsAsync(familyId, 1);
+
+        var response = await client.PostAsync("/api/agent/session/start", null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<LearningSessionResponse>();
+
+        Assert.NotNull(result);
+        Assert.Null(result!.ActiveLesson);
+        Assert.NotNull(result.AvailableMissions);
+        Assert.Equal(3, result.AvailableMissions.Count);
+        Assert.Contains(result.AvailableMissions, m => m.IsRecommended);
+        Assert.Equal("Mía", result.Explorer.ChildName);
+        Assert.NotNull(result.Metrics);
+        Assert.Empty(result.InitialAxolotlMessage);
+
+        // No creó tema ni llamó al LLM: la cuota sigue intacta.
+        Assert.Equal(1, await GetFreeInteractionsAsync(familyId));
+    }
+
+    [Fact]
+    public async Task Session_start_with_topic_creates_active_lesson_and_greeting()
+    {
+        using var client = _ctx.CreateClient();
+        await SetupChildSessionAsync(client);
+
+        var response = await client.PostAsync("/api/agent/session/start", Json(new { topicId = "fase4-saberes-ciclo-agua" }));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<LearningSessionResponse>();
+
+        Assert.NotNull(result);
+        Assert.NotNull(result!.ActiveLesson);
+        Assert.Equal("fase4-saberes-ciclo-agua", result.ActiveLesson.TopicId);
+        Assert.False(string.IsNullOrWhiteSpace(result.InitialAxolotlMessage));
+        Assert.NotNull(result.Metrics);
+    }
+
+    [Fact]
     public async Task Session_start_returns_200_with_explorer_lesson_metrics_and_greeting()
     {
         using var client = _ctx.CreateClient();
         await SetupChildSessionAsync(client);
 
-        var response = await client.PostAsync("/api/agent/session/start", null);
+        // Sin tema en curso: aparece el selector de misiones.
+        var selector = await client.PostAsync("/api/agent/session/start", null);
+        Assert.Equal(HttpStatusCode.OK, selector.StatusCode);
+        var selectorResult = await selector.Content.ReadFromJsonAsync<LearningSessionResponse>();
+        Assert.NotNull(selectorResult);
+        Assert.Null(selectorResult!.ActiveLesson);
+        Assert.Equal(3, selectorResult.AvailableMissions!.Count);
 
+        // El alumno elige la misión recomendada.
+        var recommended = selectorResult.AvailableMissions.First(m => m.IsRecommended);
+        var response = await client.PostAsync("/api/agent/session/start", Json(new { topicId = recommended.TopicId }));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var result = await response.Content.ReadFromJsonAsync<LearningSessionResponse>();
 
@@ -73,13 +126,14 @@ public class LearningSessionIntegrationTests
 
         await SetFreeInteractionsAsync(familyId, 1);
 
-        var first = await client.PostAsync("/api/agent/session/start", null);
+        // Primera llamada: elige misión y genera el saludo (consume 1 crédito).
+        var first = await client.PostAsync("/api/agent/session/start", Json(new { topicId = "fase4-saberes-ciclo-agua" }));
         Assert.Equal(HttpStatusCode.OK, first.StatusCode);
 
+        // Segunda llamada: ya hay tema en curso; reutiliza el saludo sin gastar cuota.
         var second = await client.PostAsync("/api/agent/session/start", null);
         Assert.Equal(HttpStatusCode.OK, second.StatusCode);
 
-        // Solo se consumió un crédito (el segundo refresco reutiliza el saludo).
         Assert.Equal(0, await GetFreeInteractionsAsync(familyId));
     }
 
@@ -89,7 +143,7 @@ public class LearningSessionIntegrationTests
         using var client = _ctx.CreateClient();
         var (_, childId) = await SetupChildSessionAsync(client);
 
-        var session = await client.PostAsync("/api/agent/session/start", null);
+        var session = await client.PostAsync("/api/agent/session/start", Json(new { topicId = "fase4-saberes-ciclo-agua" }));
         Assert.Equal(HttpStatusCode.OK, session.StatusCode);
 
         // Simula 60 segundos transcurridos desde la última actividad del tema.
@@ -99,6 +153,35 @@ public class LearningSessionIntegrationTests
         Assert.Equal(HttpStatusCode.OK, chat.StatusCode);
 
         Assert.True(await GetTopicTimeAsync(childId) >= 50, "El tiempo del tema en curso debería haberse acumulado.");
+    }
+
+    [Fact]
+    public async Task Session_start_recovers_persisted_messages_without_calling_llm_again()
+    {
+        using var client = _ctx.CreateClient();
+        var (familyId, _) = await SetupChildSessionAsync(client);
+
+        await SetFreeInteractionsAsync(familyId, 1);
+
+        // Elige misión: genera el saludo inicial (consume 1 crédito).
+        var first = await client.PostAsync("/api/agent/session/start", Json(new { topicId = "fase4-saberes-ciclo-agua" }));
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+        var firstResult = await first.Content.ReadFromJsonAsync<LearningSessionResponse>();
+        Assert.NotNull(firstResult);
+        Assert.NotNull(firstResult!.Messages);
+        Assert.Single(firstResult.Messages);
+        Assert.False(string.IsNullOrWhiteSpace(firstResult.InitialAxolotlMessage));
+        Assert.Equal(0, await GetFreeInteractionsAsync(familyId));
+
+        // Segunda llamada (mismo día): recupera los Messages persistidos sin llamar al LLM.
+        var second = await client.PostAsync("/api/agent/session/start", null);
+        Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+        var secondResult = await second.Content.ReadFromJsonAsync<LearningSessionResponse>();
+        Assert.NotNull(secondResult);
+        Assert.NotNull(secondResult!.Messages);
+        Assert.Equal(firstResult.Messages.Count, secondResult.Messages.Count);
+        Assert.Equal(firstResult.InitialAxolotlMessage, secondResult.InitialAxolotlMessage);
+        Assert.Equal(0, await GetFreeInteractionsAsync(familyId));
     }
 
     private async Task SetFreeInteractionsAsync(Guid familyId, int value)
@@ -131,7 +214,8 @@ public class LearningSessionIntegrationTests
     {
         using var scope = _ctx.Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var topic = await db.ChildTopicProgresses.AsNoTracking().SingleAsync(t => t.ChildProfileId == childId);
-        return topic.TimeSpentSeconds;
+        return await db.ChildTopicProgresses.AsNoTracking()
+            .Where(t => t.ChildProfileId == childId)
+            .SumAsync(t => t.TimeSpentSeconds);
     }
 }

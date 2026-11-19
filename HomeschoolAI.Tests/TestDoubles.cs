@@ -59,6 +59,12 @@ public sealed class FakeConversationStore : IConversationStore
         return Task.CompletedTask;
     }
 
+    public Task ClearAsync(string userId, string threadId, CancellationToken cancellationToken = default)
+    {
+        _threads.Remove($"{userId}:{threadId}");
+        return Task.CompletedTask;
+    }
+
     public ConversationHistory? Get(string userId, string threadId) =>
         _threads.TryGetValue($"{userId}:{threadId}", out var history) ? history : null;
 }
@@ -76,15 +82,25 @@ public sealed class FakeAgentCompletionService : IAgentCompletionService
 {
     public string Reply { get; set; } = "respuesta simulada";
 
+    /// <summary>Selector de respuesta según el system prompt (para distinguir Crítico vs Axolotl).</summary>
+    public Func<string, string>? ReplySelector { get; set; }
+
     public int Calls { get; private set; }
 
     public string? LastSystemPrompt { get; private set; }
+
+    public List<string> SystemPrompts { get; } = new();
+
+    /// <summary>Contenido del historial (turnos concatenados) enviado en cada llamada, en el mismo orden que <see cref="SystemPrompts"/>.</summary>
+    public List<string> HistoryContents { get; } = new();
 
     public Task<string> CompleteAsync(ConversationHistory history, string systemPrompt, CancellationToken cancellationToken = default)
     {
         Calls++;
         LastSystemPrompt = systemPrompt;
-        return Task.FromResult(Reply);
+        SystemPrompts.Add(systemPrompt);
+        HistoryContents.Add(string.Join("\n", history.Messages.Select(m => m.Content)));
+        return Task.FromResult(ReplySelector?.Invoke(systemPrompt) ?? Reply);
     }
 }
 
@@ -111,11 +127,20 @@ public sealed class FakeSearchService : ISearchService
 
 public sealed class FakeChildLearningRepository : IChildLearningRepository
 {
-    public Task<LearningSnapshot> GetOrCreateActiveLessonAsync(Guid childProfileId, Guid familyId, DateTime nowUtc, CancellationToken cancellationToken = default)
+    public Task<LearningSnapshot> GetOrCreateActiveLessonAsync(Guid childProfileId, Guid familyId, DateTime nowUtc, string? selectedTopicId = null, CancellationToken cancellationToken = default)
         => throw new NotSupportedException("No se usa en las pruebas de ChatService.");
 
     public Task RecordActivityAsync(Guid childProfileId, Guid familyId, DateTime nowUtc, CancellationToken cancellationToken = default)
         => Task.CompletedTask;
+
+    public Task<AttemptOutcomeDto> ApplyAttemptOutcomeAsync(Guid familyId, Guid childProfileId, string topicId, bool isCorrect, DateTime nowUtc, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException("No se usa en las pruebas de ChatService.");
+
+    public Task<ActiveTopicDto?> GetActiveTopicAsync(Guid familyId, Guid childProfileId, CancellationToken cancellationToken = default)
+        => Task.FromResult<ActiveTopicDto?>(null);
+
+    public Task<IReadOnlyList<MissionOptionDto>> GetMissionOptionsAsync(Guid familyId, Guid childProfileId, DateTime nowUtc, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException("No se usa en las pruebas de ChatService.");
 }
 
 public sealed class InMemoryLogSink : ILoggerProvider

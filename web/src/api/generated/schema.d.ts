@@ -135,6 +135,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/exit-child": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ExitChildSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/family": {
         parameters: {
             query?: never;
@@ -299,9 +315,31 @@ export interface components {
         AntiforgeryTokenResponse: {
             token?: string | null;
         };
+        AttemptEvaluationOutcome: {
+            newStatus?: components["schemas"]["TopicStatus"];
+            /** Format: int32 */
+            attemptNumber?: number;
+            /** Format: int32 */
+            xpAwarded?: number;
+            badgeEarned?: string | null;
+            isTopicClosed?: boolean;
+        };
+        AttemptOutcomeDto: {
+            outcome?: components["schemas"]["AttemptEvaluationOutcome"];
+            metrics?: components["schemas"]["LearningMetricsDto"];
+        };
+        AuthResponse: {
+            familyMemberId?: string | null;
+            /** Format: uuid */
+            familyId?: string;
+            role?: string | null;
+        };
         ChatResponse: {
             threadId?: string | null;
             content?: string | null;
+            attemptOutcome?: components["schemas"]["AttemptOutcomeDto"];
+            metrics?: components["schemas"]["LearningMetricsDto"];
+            nextLesson?: components["schemas"]["ActiveLessonDto"];
         };
         ChildProfileDto: {
             /** Format: uuid */
@@ -312,6 +350,10 @@ export interface components {
             /** Format: int32 */
             fase?: number | null;
             avatarUrl?: string | null;
+        };
+        ConversationMessageDto: {
+            role?: string | null;
+            content?: string | null;
         };
         CreateChildRequest: {
             name?: string | null;
@@ -354,16 +396,33 @@ export interface components {
             activeLesson?: components["schemas"]["ActiveLessonDto"];
             threadId?: string | null;
             initialAxolotlMessage?: string | null;
+            availableMissions?: components["schemas"]["MissionOptionDto"][] | null;
+            dailyGreeting?: string | null;
+            messages?: components["schemas"]["ConversationMessageDto"][] | null;
         };
         LessonBlockDto: {
             type?: string | null;
             content?: string | null;
             altText?: string | null;
             narrationText?: string | null;
+            imageUrl?: string | null;
         };
         LoginRequest: {
             email?: string | null;
             password?: string | null;
+        };
+        MissionOptionDto: {
+            topicId?: string | null;
+            title?: string | null;
+            campoFormativo?: string | null;
+            weeklyProjectTitle?: string | null;
+            weeklyProjectGoal?: string | null;
+            /** Format: int32 */
+            trimester?: number;
+            /** Format: int32 */
+            orderIndex?: number;
+            isRecommended?: boolean;
+            status?: string | null;
         };
         RegisterRequest: {
             email?: string | null;
@@ -378,6 +437,9 @@ export interface components {
             /** Format: int32 */
             pool?: number | null;
         };
+        StartLearningSessionRequest: {
+            topicId?: string | null;
+        };
         TopicHistoryItemDto: {
             topicId?: string | null;
             topicTitle?: string | null;
@@ -391,6 +453,8 @@ export interface components {
             /** Format: date-time */
             lastActivityAtUtc?: string;
         };
+        /** @enum {string} */
+        TopicStatus: "InProgress" | "Completed" | "Partial";
     };
     responses: never;
     parameters: never;
@@ -460,7 +524,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["StartLearningSessionRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -532,6 +600,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    ExitChildSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResponse"];
+                };
             };
         };
     };

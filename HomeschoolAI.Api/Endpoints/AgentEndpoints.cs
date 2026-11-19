@@ -59,9 +59,10 @@ public static class AgentEndpoints
             .Produces(StatusCodes.Status400BadRequest);
 
         endpoints.MapPost("/api/agent/session/start", async (
+                StartLearningSessionRequest? request,
                 IChatService chatService,
                 CancellationToken cancellationToken) =>
-                Results.Ok(await chatService.StartLearningSessionAsync(cancellationToken)))
+                Results.Ok(await chatService.StartLearningSessionAsync(request?.TopicId, cancellationToken)))
             .WithName("StartLearningSession")
             .RequireRateLimiting("agent")
             .RequireAuthorization(AuthorizationPolicies.RequireChild)
@@ -95,4 +96,14 @@ public sealed class AgentChatRequest
     public string? ThreadId { get; init; }
 
     public string? Message { get; init; }
+}
+
+/// <summary>
+/// Cuerpo opcional del inicio de sesión de aprendizaje: el identificador de la
+/// misión elegida por el alumno. Si viene vacío y no hay tema en curso, el endpoint
+/// devuelve el selector de 3 misiones en lugar de crear el tema.
+/// </summary>
+public sealed class StartLearningSessionRequest
+{
+    public string? TopicId { get; init; }
 }

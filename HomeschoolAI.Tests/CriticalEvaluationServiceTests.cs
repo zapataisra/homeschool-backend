@@ -2,7 +2,6 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using HomeschoolAI.Application.Evaluation;
 using HomeschoolAI.Application.Progress;
-using HomeschoolAI.Application.Validation;
 using HomeschoolAI.Domain.Progress;
 using HomeschoolAI.Domain.Validation;
 using Xunit;
@@ -16,7 +15,7 @@ public class CriticalEvaluationServiceTests
         IMathValidator? mathValidator = null,
         IXPCalculator? xpCalculator = null) =>
         new(
-            mathValidator ?? new MathValidator(),
+            mathValidator ?? new DeterministicMathValidator(),
             xpCalculator ?? new XPCalculator(),
             completion,
             NullLogger<CriticalEvaluationService>.Instance);
@@ -177,5 +176,69 @@ public class CriticalEvaluationServiceTests
 
         Assert.NotNull(completion.LastSystemPrompt);
         Assert.Contains("Agente Crítico", completion.LastSystemPrompt);
+    }
+
+    [Fact]
+    public async Task System_prompt_calibrates_elementary_rubric_and_non_math_step_a()
+    {
+        var completion = new FakeAgentCompletionService
+        {
+            Reply = JsonOf(new EvaluationResultDto
+            {
+                Precision = 80,
+                Confidence = 1.0,
+                ExtractedOperation = null
+            })
+        };
+        var service = BuildService(completion);
+
+        var result = await service.EvaluateAsync("derecho a la educación, porque debemos aprender cosas en la escuela", attempt: 1, baseXp: 100);
+
+        // Sin matemáticas, el Paso A no debe generar un falso negativo.
+        Assert.True(result.StepAValid);
+        Assert.Contains("precision >= 80", completion.LastSystemPrompt);
+        Assert.Contains("NO exijas definiciones académicas", completion.LastSystemPrompt);
+        Assert.Contains("\"extractedOperation\": null", completion.LastSystemPrompt);
+    }
+
+    [Fact]
+    public async Task Correct_fraction_expression_passes_stepA()
+    {
+        var completion = new FakeAgentCompletionService
+        {
+            Reply = JsonOf(new EvaluationResultDto
+            {
+                Precision = 100,
+                Confidence = 1.0,
+                ExtractedOperation = new ExtractedOperationDto { Expression = "2/4 > 3/8" }
+            })
+        };
+        var service = BuildService(completion);
+
+        var result = await service.EvaluateAsync("2/4 es mayor que 3/8", attempt: 1, baseXp: 100);
+
+        Assert.True(result.StepAValid);
+        Assert.True(result.MathIsCorrect);
+    }
+
+    [Fact]
+    public async Task Wrong_fraction_expression_forces_stepA_invalid()
+    {
+        var completion = new FakeAgentCompletionService
+        {
+            Reply = JsonOf(new EvaluationResultDto
+            {
+                Precision = 100,
+                Confidence = 1.0,
+                ExtractedOperation = new ExtractedOperationDto { Expression = "3/8 > 2/4" }
+            })
+        };
+        var service = BuildService(completion);
+
+        var result = await service.EvaluateAsync("3/8 es mayor que 2/4", attempt: 1, baseXp: 100);
+
+        Assert.False(result.StepAValid);
+        Assert.False(result.MathIsCorrect);
+        Assert.Equal(0, result.XpAwarded);
     }
 }

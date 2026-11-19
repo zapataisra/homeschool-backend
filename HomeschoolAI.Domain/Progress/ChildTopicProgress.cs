@@ -48,4 +48,45 @@ public sealed class ChildTopicProgress
         TimeSpentSeconds += Math.Clamp(elapsedSeconds, 0, maxIdleSecondsPerTurn);
         LastActivityAtUtc = nowUtc;
     }
+
+    /// <summary>
+    /// Registra un intento de evaluación sobre el tema y aplica las reglas de
+    /// gamificación positiva (máximo 3 intentos). Un tema ya cerrado no vuelve a
+    /// evaluarse ni vuelve a otorgar XP.
+    /// </summary>
+    public AttemptEvaluationOutcome RegisterAttempt(bool isCorrect, DateTime nowUtc)
+    {
+        if (Status is TopicStatus.Completed or TopicStatus.Partial)
+        {
+            return new AttemptEvaluationOutcome(Status, Attempts, 0, BadgeEarned, IsTopicClosed: true);
+        }
+
+        RecordActivity(nowUtc);
+        Attempts++;
+        var attemptNumber = Attempts;
+
+        if (isCorrect)
+        {
+            var (xpAwarded, badge) = attemptNumber switch
+            {
+                1 => (100, "Rayo de Inspiración"),
+                2 => (75, "Exploradora Curiosa"),
+                _ => (50, "Imparable + Cristal de Perseverancia")
+            };
+
+            Status = TopicStatus.Completed;
+            CompletedAtUtc = nowUtc;
+            BadgeEarned = badge;
+
+            return new AttemptEvaluationOutcome(Status, attemptNumber, xpAwarded, badge, IsTopicClosed: true);
+        }
+
+        if (Attempts >= 3)
+        {
+            Status = TopicStatus.Partial;
+            return new AttemptEvaluationOutcome(Status, attemptNumber, 25, null, IsTopicClosed: true);
+        }
+
+        return new AttemptEvaluationOutcome(Status, attemptNumber, 0, null, IsTopicClosed: false);
+    }
 }

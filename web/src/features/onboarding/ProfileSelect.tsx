@@ -19,6 +19,10 @@ export default function ProfileSelect() {
     setError(null);
     setChildren(null);
     try {
+      // Asegura sesión adulta: si venimos de /chat con sesión delegada de niño,
+      // salimos de ella (idempotente) antes de listar exploradores.
+      await apiClient.POST("/api/auth/exit-child", {});
+
       const { response, data } = await apiClient.GET("/api/family/children");
       if (!response.ok) {
         setError("No pudimos cargar a tus exploradores. Intenta de nuevo.");

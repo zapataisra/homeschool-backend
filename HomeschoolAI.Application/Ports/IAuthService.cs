@@ -17,4 +17,7 @@ public interface IAuthService
 
     /// <summary>Inicia la sesión delegada del niño (el adulto selecciona un ChildProfile de su familia).</summary>
     Task<ChildSessionResponse> StartChildSessionAsync(Guid childId, CancellationToken cancellationToken = default);
+
+    /// <summary>Restaura la sesión delegada del niño y restaura la cookie del adulto (idempotente).</summary>
+    Task<AuthResponse> ExitChildSessionAsync(CancellationToken cancellationToken = default);
 }

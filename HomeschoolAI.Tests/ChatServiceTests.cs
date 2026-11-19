@@ -1,8 +1,11 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using HomeschoolAI.Application.Chat;
+using HomeschoolAI.Application.Evaluation;
+using HomeschoolAI.Application.Progress;
 using HomeschoolAI.Domain.Auth;
 using HomeschoolAI.Domain.Conversation;
+using HomeschoolAI.Domain.Validation;
 using Xunit;
 
 namespace HomeschoolAI.Tests;
@@ -17,7 +20,18 @@ public class ChatServiceTests
         FakeAgentCompletionService completion,
         string userId,
         ILogger<ChatService> logger) =>
-        new(store, completion, new FakeUserContextProvider(new UserContext(userId, Guid.NewGuid(), UserRole.Owner)), new FakeInteractionQuotaService(), new FakeChildLearningRepository(), new FakeSearchService(), logger);
+        new(
+            store,
+            completion,
+            new FakeUserContextProvider(new UserContext(userId, Guid.NewGuid(), UserRole.Owner)),
+            new FakeInteractionQuotaService(),
+            new FakeChildLearningRepository(),
+            new FakeSearchService(),
+            BuildEvaluator(completion),
+            logger);
+
+    private static CriticalEvaluationService BuildEvaluator(FakeAgentCompletionService completion) =>
+        new(new DeterministicMathValidator(), new XPCalculator(), completion, NullLogger<CriticalEvaluationService>.Instance);
 
     [Fact]
     public async Task Chat_generates_thread_id_and_persists_user_and_assistant_turns()

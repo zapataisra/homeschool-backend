@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using HomeschoolAI.Adapters.Persistence;
 using HomeschoolAI.Domain.Billing;
 using HomeschoolAI.Domain.Progress;
 
@@ -29,6 +30,8 @@ public sealed class AppDbContext : IdentityDbContext<FamilyMember>
     public DbSet<ChildTopicProgress> ChildTopicProgresses => Set<ChildTopicProgress>();
 
     public DbSet<PaymentEvent> PaymentEvents => Set<PaymentEvent>();
+
+    public DbSet<ConversationMessageEntity> ConversationMessages => Set<ConversationMessageEntity>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -148,6 +151,22 @@ public sealed class AppDbContext : IdentityDbContext<FamilyMember>
 
             // Idempotencia: un mismo evento de Stripe solo se registra una vez.
             entity.HasIndex(e => e.StripeEventId).IsUnique();
+        });
+
+        builder.Entity<ConversationMessageEntity>(entity =>
+        {
+            entity.ToTable("conversation_messages");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            entity.Property(e => e.SessionId).HasColumnName("session_id").IsRequired().HasMaxLength(256);
+            entity.Property(e => e.Role).HasColumnName("role").IsRequired().HasMaxLength(16);
+            entity.Property(e => e.Content).HasColumnName("content").IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+
+            // Lectura del historial en orden cronológico por sesión.
+            entity.HasIndex(e => new { e.SessionId, e.CreatedAtUtc });
         });
     }
 }
